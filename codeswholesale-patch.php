@@ -52,30 +52,54 @@ function check_codeswholesale_plugin()
         add_action( 'admin_notices', 'my_error_notice' );
     }
 }
-
+*/
 
 /*
  * Add the plugin to the admin menu with a own page.
  */
 function add_admin_menu_patch()
 {
-    add_dashboard_page(
-        __('Bojett.com Patch', 'codeswholesale-patch'),
-        __('Bojett.com Patch', 'codeswholesale-patch'),
+    add_menu_page(
+        __('Bojett.com', 'codeswholesale-patch'),
+        __('Bojett.com', 'codeswholesale-patch'),
+        'manage_options',
+        'cws-bojett-patch',
+        'render_custom_link_page',
+        '/wp-content/plugins/codeswholesale-patch/' . plugin_basename( 'img/bojett_icon_24x24.png' ),
+        3
+    );
+    add_submenu_page(
+        'cws-bojett-patch',
+        __('Importer', 'codeswholesale-patch'),
+        __('Importer', 'codeswholesale-patch'),
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page'
     );
     add_submenu_page(
-        'codeswholesale',
-        __('Bojett.com Patch', 'codeswholesale-patch'),
-        __('Bojett.com Patch', 'codeswholesale-patch'),
+        'cws-bojett-patch',
+        __('Settings', 'codeswholesale-patch'),
+        __('Settings', 'codeswholesale-patch'),
         'manage_options',
-        'index.php?page=cws-bojett-patch',
-        'prefix_render'
+        'cws-bojett-settings',
+        'cws-bojett-settings'
     );
+
+    function run_my_script() {
+        echo 'hehehehe';
+    }
+    function USERS_MONITORING() {
+        if ( ! wp_next_scheduled( 'USERS_MONITORING' ) ) {
+            wp_schedule_event( time(), 'every_minute', 'USERS_MONITORING' );
+        }
+    }
+    add_action( 'USERS_MONITORING', 'run_my_script' );
+    //USERS_MONITORING();
+
 }
 add_action('admin_menu', 'add_admin_menu_patch');
+
+
 
 function get_string_between($string, $start, $end){
     $string = ' ' . $string;
