@@ -93,12 +93,137 @@ function add_admin_menu_patch()
             wp_schedule_event( time(), 'every_minute', 'USERS_MONITORING' );
         }
     }
-    add_action( 'USERS_MONITORING', 'run_my_script' );
+    add_action( 'USERS_MONITORING', 'run_my_script' );*/
     //USERS_MONITORING();
 
 }
 add_action('admin_menu', 'add_admin_menu_patch');
 
+if($_POST['set_settings']) {
+    function my_error_notice1() {
+        ?>
+        <div class="success notice notice-success">
+            <p><?php _e( 'Deine Einstellungen wurden erfolgreich geändert.', 'codeswholesale_patch' ); ?></p>
+        </div>
+        <?php
+    }
+    add_action( 'admin_notices', 'my_error_notice1' );
+}
+
+/*
+ * Define and run Cronjob for refreshing the bearer in time
+ */
+function run_cws_cron_script() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $access_bearer = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $access_expires_in = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+    $db_expires_in = $access_expires_in;
+    $current_timestamp = time();
+    if($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
+        // Do nothing, the bearer is already up to date.
+    } else {
+        $options_name = $wpdb->prefix . "bojett_credentials";
+        $client_id = $wpdb->get_var('SELECT cws_client_id FROM '. $options_name);
+        $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM '. $options_name);
+
+        $ch = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json' )); // Inject the token into the header
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+        $result = curl_exec($ch); // Execute the cURL statement
+        curl_close($ch); // Close the cURL connection*/
+        $new_bearer = json_decode($result, true)['access_token'];
+        $new_bearer_expires = json_decode($result, true)['expires_in'];
+        $new_db_expires_in = $current_timestamp + $new_bearer_expires;
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+        if($current_access_bearer != NULL) {
+            $wpdb->query("TRUNCATE TABLE $table_name");
+            $wpdb->insert($table_name, array(
+                'cws_expires_in' => $new_db_expires_in,
+                'cws_access_token' => $new_bearer
+            ));
+        } else {
+            $wpdb->insert($table_name, array(
+                'cws_expires_in' => $new_db_expires_in,
+                'cws_access_token' => $new_bearer
+            ));
+        }
+    }
+}
+function USERS_MONITORING() {
+    global $wpdb;
+    if ( ! wp_next_scheduled( 'USERS_MONITORING' ) ) {
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $access_expires_in = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+        wp_schedule_single_event( $access_expires_in, 'USERS_MONITORING' );
+    }
+}
+add_action( 'USERS_MONITORING', 'run_cws_cron_script' );
+
+
+USERS_MONITORING();
+function bojett_settings() {
+    global $table_prefix, $wpdb;
+    if($_POST['set_settings']) {
+        require_once('includes/bearer-refresh.php');
+        wp_mail("renewedplains@gmail.com", "Notification TEST", "TEST", null);
+        $cws_client_id = $_POST['cws_client_id'];
+        $cws_secret_id = $_POST['cws_secret_id'];
+        $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
+        if($get_credentials_check === NULL) {
+            $wpdb->insert($table_prefix.'bojett_credentials', array(
+                'cws_client_id' => $cws_client_id,
+                'cws_client_secret' => $cws_secret_id,
+                'batch_size' => '20',
+            ));
+        } else {
+            $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$table_prefix.'bojett_credentials');
+            $wpdb->update(
+                $table_prefix.'bojett_credentials',
+                array(
+                    'cws_client_id' => $cws_client_id,
+                    'cws_client_secret' => $cws_secret_id
+                ),
+                array( 'id' => $get_credentials_id ),
+                array(
+                    '%s',
+                    '%s'
+                ),
+                array( '%s' )
+            );
+        }
+    }
+
+    $get_client_id = $wpdb->get_var('SELECT cws_client_id FROM '.$table_prefix.'bojett_credentials');
+    $get_client_secret = $wpdb->get_var('SELECT cws_client_secret FROM '.$table_prefix.'bojett_credentials');
+    ?>
+    <div class="wrap">
+        <h1 class="wp-heading-inline">
+            <?php _e('Settings', 'codeswholesale_patch'); ?>
+            <form action="<?php echo $_SERVER['PHP_SELF']; ?>?page=cws-bojett-settings" method="post">
+                <table class="form-table" role="presentation">
+
+                    <tbody><tr>
+                        <th scope="row"><label for="cws_client_id"><?php _e('Your CWS API Client ID', 'codeswholesale_patch'); ?></label></th>
+                        <td><input name="cws_client_id" type="text" id="cws_client_id" value="<?php echo $get_client_id; ?>" class="regular-text"></td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><label for="cws_secret_id"><?php _e('Your CWS API Secret ID', 'codeswholesale_patch'); ?></label></th>
+                        <td><input name="cws_secret_id" type="text" id="cws_secret_id" aria-describedby="tagline-description" value="<?php echo $get_client_secret; ?>" class="regular-text">
+                            <p class="description" id="tagline-description">In a few words, explain what this site is about.</p></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <p class="submit"><input type="submit" name="set_settings" id="submit" class="button button-primary" value="<?php _e("Save Changes", 'codeswholesale_patch'); ?>"></p>
+            </form>
+        </h1>
+    </div>
+    <?php
+}
 
 
 function get_string_between($string, $start, $end){
