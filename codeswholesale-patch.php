@@ -1,34 +1,51 @@
 <?php
 /*
 Plugin Name: Bojett Codeswholesale Patch
-Description: Authentication for REST API
+Description: Currently the codeswholesale importer for WooCommerce is not working. This patch provides a new importer to import all products from CWS.
 Text Domain: codeswholesale_patch
+Depends: WooCommerce
 Version: 1.0.0
 Author: Mario Freuler
 License: GPL2
 */
+
 ob_start();
-set_time_limit(0);
-ignore_user_abort(true);
-ini_set('max_execution_time', 0);
+
 global $wpdb;
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
 require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
 
+set_time_limit(0);
+ignore_user_abort(true);
+ini_set('max_execution_time', 0);
+
+/*
+ * Check if the original codeswholesale plugin installed and activated.
+ */
 add_action( 'plugins_loaded', 'check_codeswholesale_plugin', 100 );
 function check_codeswholesale_plugin()
 {
-    if (is_plugin_active( ABSPATH . 'wp-content/plugins/codeswholesale/codeswholesale.php') ) {
-
+    if (is_plugin_active( 'codeswholesale-for-woocommerce/codeswholesale.php' ) ) {
+        // TODO: if the codeswholesale plugin not configured, notice the administrator.
+        /*add_action('init', 'conf_remember');
+        function conf_remember() {
+            ?>
+            <div class="error notice">
+                <p><?php _e( 'Plugin ist activated but not configured yet. Please configure the original plugin - we can start after that with the import! ', 'codeswholesale_patch' ); ?></p>
+            </div>
+            <?php
+        }
+        add_action( 'admin_notices', 'my_error_notice' );*/
     } else {
         deactivate_plugins( plugin_basename( __FILE__ ) );
         unset($_GET['activate']);
         function my_error_notice() {
             ?>
             <div class="error notice">
-                <p><?php _e( 'Plugin could not be activated. Please download the official plugin from <a href="/wp-admin/plugin-install.php?s=codeswholesale&tab=search&type=term">Codeswholesale</a> and configure it. ', 'my_plugin_textdomain' ); ?></p>
+                <?php var_dump(plugin_dir_path( 'codeswholesale-for-woocommerce' . DIRECTORY_SEPARATOR . 'codeswholesale.php' )); ?>
+                <p><?php _e( 'Plugin could not be activated. Please download the official plugin from <a href="/wp-admin/plugin-install.php?s=codeswholesale&tab=search&type=term">Codeswholesale</a> and configure it. ', 'codeswholesale_patch' ); ?></p>
             </div>
             <?php
         }
@@ -37,8 +54,28 @@ function check_codeswholesale_plugin()
 }
 
 
-$fp=fopen("../../../tmp/php-error.log", "w");
-fclose($fp);
+/*
+ * Add the plugin to the admin menu with a own page.
+ */
+function add_admin_menu_patch()
+{
+    add_dashboard_page(
+        __('Bojett.com Patch', 'codeswholesale-patch'),
+        __('Bojett.com Patch', 'codeswholesale-patch'),
+        'manage_options',
+        'cws-bojett-patch',
+        'render_custom_link_page'
+    );
+    add_submenu_page(
+        'codeswholesale',
+        __('Bojett.com Patch', 'codeswholesale-patch'),
+        __('Bojett.com Patch', 'codeswholesale-patch'),
+        'manage_options',
+        'index.php?page=cws-bojett-patch',
+        'prefix_render'
+    );
+}
+add_action('admin_menu', 'add_admin_menu_patch');
 
 function get_string_between($string, $start, $end){
     $string = ' ' . $string;
@@ -78,16 +115,12 @@ if($db_expires_in > $current_timestamp) {
     curl_close($ch); // Close the cURL connection
 }
 
-function add_cws_patch_sub() {
-   // add_submenu_page( 'codeswholesale', 'Bojett Patch', 'Bojett Patch', 'manage_options', 'bojett-patch', array('render_custom_link_page'));
-}
-add_action('admin_menu', 'add_cws_patch_sub');
 
 
 
 
 
-function render_custom_link_page($result) {
+function render_custom_link_page() {
     echo '
 <div class="clickme" style="margin-left:  400px; margin-top: 300px;">Klick Me</div>
 <script>
@@ -96,9 +129,6 @@ jQuery(function() {
         jQuery.ajax({
   url: "/wp-content/plugins/codeswholesale-patch/importaction.php",
 }).done(function( data ) {
-      jQuery(".kernel").append(data);
-
-      console.log(data);
       alert("alles io");
   });
     }); 
