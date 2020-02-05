@@ -5,25 +5,84 @@ Description: Currently the codeswholesale importer for WooCommerce is not workin
 Text Domain: codeswholesale_patch
 Depends: WooCommerce
 Version: 1.0.0
-Author: Mario Freuler
+Author: Mario Freuler, Bojett.com
 License: GPL2
 */
 
 ob_start();
 
-global $wpdb;
+function add_quick_style()
+{
+    return '<style>.toplevel_page_cws-bojett-patch img { margin-top:-4px}</style>';
+}
+add_action('init', 'add_quick_style');
+
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
 require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
+global $wpdb;
 
-set_time_limit(0);
-ignore_user_abort(true);
-ini_set('max_execution_time', 0);
+
+/*
+ * Create the required tables for the plugin by activation of the plugin.
+ */
+function create_plugin_database_tables()
+{
+    global $table_prefix, $wpdb;
+
+    $credentials = 'bojett_credentials';
+    $bojett_credentials_table = $table_prefix . "$credentials";
+    require_once( ABSPATH . '/wp-admin/includes/upgrade.php' );
+    if($wpdb->get_var( "show tables like '$bojett_credentials_table'" ) != $bojett_credentials_table)
+    {
+        $sql = "CREATE TABLE `". $bojett_credentials_table . "` ( ";
+        $sql .= "  `id`  int(11)   NOT NULL auto_increment, ";
+        $sql .= "  `cws_client_id`  varchar(128)  DEFAULT NULL, ";
+        $sql .= "  `cws_client_secret`  varchar(128)   DEFAULT NULL, ";
+        $sql .= "  `batch_size`  varchar(128)   DEFAULT NULL, ";
+        $sql .= "  `importnumber`  varchar(128)   DEFAULT NULL, ";
+        $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
+        $sql .= "  PRIMARY KEY (`id`) ";
+        $sql .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        dbDelta($sql);
+    }
+
+    $token = 'bojett_auth_token';
+    $bojett_token_table = $table_prefix . "$token";
+    if($wpdb->get_var( "show tables like '$bojett_token_table'" ) != $bojett_token_table)
+    {
+        $sql2 = "CREATE TABLE `". $bojett_token_table . "` ( ";
+        $sql2 .= "  `id`  int(11) NOT NULL auto_increment, ";
+        $sql2 .= "  `cws_expires_in`  varchar(128)  DEFAULT NULL, ";
+        $sql2 .= "  `cws_access_token`  varchar(128) DEFAULT NULL, ";
+        $sql2 .= "  PRIMARY KEY (`id`) ";
+        $sql2 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        dbDelta($sql2);
+    }
+
+    $import = 'bojett_import';
+    $bojett_import_table = $table_prefix . "$import";
+    if($wpdb->get_var( "show tables like '$bojett_import_table'" ) != $bojett_import_table)
+    {
+        $sql3 = "CREATE TABLE `". $bojett_import_table . "` ( ";
+        $sql3 .= "  `id`  int(11)   NOT NULL auto_increment, ";
+        $sql3 .= "  `name`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  `cws_id`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  `created_at`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  PRIMARY KEY (`id`) ";
+        $sql3 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        dbDelta($sql3);
+    }
+}
+register_activation_hook( __FILE__, 'create_plugin_database_tables' );
+
 
 /*
  * Check if the original codeswholesale plugin installed and activated.
  */
+
+/*
 add_action( 'plugins_loaded', 'check_codeswholesale_plugin', 100 );
 function check_codeswholesale_plugin()
 {
@@ -37,7 +96,7 @@ function check_codeswholesale_plugin()
             </div>
             <?php
         }
-        add_action( 'admin_notices', 'my_error_notice' );*/
+        add_action( 'admin_notices', 'my_error_notice' );
     } else {
         deactivate_plugins( plugin_basename( __FILE__ ) );
         unset($_GET['activate']);
@@ -82,10 +141,10 @@ function add_admin_menu_patch()
         __('Settings', 'codeswholesale-patch'),
         'manage_options',
         'cws-bojett-settings',
-        'cws-bojett-settings'
+        'bojett_settings'
     );
 
-    function run_my_script() {
+    /*function run_my_script() {
         echo 'hehehehe';
     }
     function USERS_MONITORING() {
