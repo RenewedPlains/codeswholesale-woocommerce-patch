@@ -23,7 +23,9 @@ require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
 global $wpdb;
 
-
+//TODO: Add select element for every product page with the cws_product_ids
+//TODO: Check if product exist with this cws product id
+//TODO: Check code for correct values from old script
 /*
  * Create the required tables for the plugin by activation of the plugin.
  */
