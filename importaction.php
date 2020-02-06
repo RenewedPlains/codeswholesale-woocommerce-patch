@@ -1,12 +1,6 @@
 <?php
-ini_set('MAX_EXECUTION_TIME', '-1');
-ini_set('UPLOAD_MAX_FILESIZE', 0);
-ini_set("log_errors", 0);
-ini_set("display_errors", 1);
-set_time_limit(0);
-$timestamp_start = time();
-ignore_user_abort(true);
-//sleep(3600000);
+set_time_limit(30);
+ini_set('memory_limit', '512M');
 if(connection_aborted()){
     echo 'die  Zeit  ist um ';
 }
@@ -32,9 +26,10 @@ require_once ('../../../wp-load.php');
 require_once ('../../../wp-config.php');
 
 global $wpdb;
-$table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-$access_bearer = $wpdb->get_results( "SELECT expires_in, access_token FROM $table_name" );
-$db_token = $access_bearer[0]->access_token;
+$table_name = $wpdb->prefix . "bojett_auth_token";
+$current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+$current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+$db_token = $current_access_bearer_expire;
 
 $ch = curl_init('https://api.codeswholesale.com/v2/products'); // Initialise cURL
 //$post = json_encode($post); // Encode the data array into a JSON string
@@ -70,9 +65,10 @@ if(find_empty_games($result_array['items'], '') === FALSE){
 function get_single_product($productId)
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-    $access_bearer = $wpdb->get_results("SELECT expires_in, access_token FROM $table_name");
-    $db_token = $access_bearer[0]->access_token;
+
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $db_token = $current_access_bearer_expire;
 
     $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
     $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
@@ -88,9 +84,9 @@ function get_single_product($productId)
 function get_single_product_description($productId)
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-    $access_bearer = $wpdb->get_results("SELECT expires_in, access_token FROM $table_name");
-    $db_token = $access_bearer[0]->access_token;
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $db_token = $current_access_bearer_expire;
 
     $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
     $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
@@ -130,9 +126,9 @@ function checktitle($fix_title, $productId, $db_token)
 function get_single_product_title($productId)
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-    $access_bearer = $wpdb->get_results("SELECT expires_in, access_token FROM $table_name");
-    $db_token = $access_bearer[0]->access_token;
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $db_token = $current_access_bearer_expire;
 
     $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId); // Initialise cURL
     $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
@@ -149,9 +145,10 @@ function get_single_product_title($productId)
 function get_single_product_categories($productId)
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-    $access_bearer = $wpdb->get_results("SELECT expires_in, access_token FROM $table_name");
-    $db_token = $access_bearer[0]->access_token;
+
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $db_token = $current_access_bearer_expire;
 
     $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
     $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
@@ -168,9 +165,10 @@ function get_single_product_categories($productId)
 function get_single_product_screenshots($productId)
 {
     global $wpdb;
-    $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-    $access_bearer = $wpdb->get_results("SELECT expires_in, access_token FROM $table_name");
-    $db_token = $access_bearer[0]->access_token;
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $db_token = $current_access_bearer_expire;
 
     $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
     $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
@@ -293,11 +291,12 @@ function inital_pull($token, $resulti) {
 //for ($i = 0; $i <= 49; $i++) {
 $importtime = array();
 // noch ein Import machen für 337 und kleiner wegen Titelfehler
-for ($i = 1013; $i <= $products_count - 1; $i++) {
+for ($i = 0; $i <= $products_count - 1; $i++) {
     global $wpdb;
-    $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
-    $access_bearer = $wpdb->get_results("SELECT expires_in, access_token FROM $table_name");
-    $db_token = $access_bearer[0]->access_token;
+    $table_name = $wpdb->prefix . "bojett_auth_token";
+    $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $db_token = $current_access_bearer_expire;
 
     $result = inital_pull($db_token, $result);
 
@@ -487,7 +486,7 @@ for ($i = 1013; $i <= $products_count - 1; $i++) {
     update_post_meta($post_id, '_backorders', 'no');
     wc_update_product_stock($post_id, $cws_quantity, 'set');
     wp_set_object_terms($post_id, $tager, 'product_cat');
-set_time_limit(5000);
+set_time_limit(60);
 
     /**
      * Attach images to product (feature/ gallery)
@@ -511,6 +510,8 @@ set_time_limit(5000);
         }
 
     }
+    global $timestamp_start;
+
     $importtime[$i] = time();
     $stamp = date('d.m.Y - H:i:s', $importtime[$i]);
     $twiggle = $i - 1;
