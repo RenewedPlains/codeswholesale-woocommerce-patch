@@ -126,9 +126,10 @@ function add_admin_menu_patch()
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page',
-        '/wp-content/plugins/codeswholesale-patch/' . plugin_basename( 'img/bojett_icon_24x24.png' ),
+        '/wp-content/plugins/codeswholesale-patch/' . plugin_basename( 'img/bojett_icon_128x128.png' ),
         3
     );
+
     add_submenu_page(
         'cws-bojett-patch',
         __('Importer', 'codeswholesale-patch'),
@@ -159,6 +160,15 @@ function add_admin_menu_patch()
 
 }
 add_action('admin_menu', 'add_admin_menu_patch');
+
+add_filter('admin_menu', 'change_icon_style_start',1);
+function change_icon_style_start($template) {
+    ob_start('change_icon_style_end');
+    return $template;
+}
+function change_icon_style_end($buffer) {
+    return str_replace('img/bojett_icon_128x128.png"','img/bojett_icon_128x128.png" style="max-width: 24px;margin-top:-3px;"', $buffer);
+}
 
 if($_POST['set_settings']) {
     function my_error_notice1() {
