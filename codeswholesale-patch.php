@@ -350,19 +350,27 @@ if($db_expires_in > $current_timestamp) {
 
 
 function render_custom_link_page() {
-    echo '
+    echo '<div class="wrap">
+    <h1>' . __("Product Import", "codeswholesale_patch") . '</h1>
+    
+    <div class="importer_container"></div>
+
 <div class="clickme" style="margin-left:  400px; margin-top: 300px;">Klick Me</div>
+</div>'; ?>
 <script>
 jQuery(function() {
     jQuery(".clickme").on("click", function() {
         jQuery.ajax({
   url: "/wp-content/plugins/codeswholesale-patch/importaction.php",
 }).done(function( data ) {
-      alert("alles io");
+    jQuery(".wrap h1").after('<div class="success notice-success notice importcall"><p><?php _e( 'Import started successfully. The import will also continue when you leave the page. Come back here to see the status of the import.', 'codeswholesale_patch' ); ?></p></div>');
+      jQuery(".importer_container").html(data);
+      console.log(data);
   });
     }); 
 });
-</script>';
+</script>
+<?php
 }
 
 
