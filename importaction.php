@@ -1,6 +1,7 @@
 <?php
 set_time_limit(30);
 ini_set('memory_limit', '512M');
+
 if(connection_aborted()){
     echo 'die  Zeit  ist um ';
 }
@@ -26,6 +27,7 @@ require_once ('../../../wp-load.php');
 require_once ('../../../wp-config.php');
 
 global $wpdb;
+
 $table_name = $wpdb->prefix . "bojett_auth_token";
 $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
 $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
@@ -290,6 +292,9 @@ function inital_pull($token, $resulti) {
 
 //for ($i = 0; $i <= 49; $i++) {
 $importtime = array();
+
+function import_cws_product() {
+    global $products_count, $result;
 // noch ein Import machen für 337 und kleiner wegen Titelfehler
 for ($i = 0; $i <= $products_count - 1; $i++) {
     global $wpdb;
@@ -586,4 +591,9 @@ set_time_limit(60);
 
 }
 
-?>
+}
+
+
+
+do_action( 'import_batch');
+echo 'etz isch fertig';

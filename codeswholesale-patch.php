@@ -216,12 +216,28 @@ function USERS_MONITORING() {
 }
 add_action( 'USERS_MONITORING', 'run_cws_cron_script' );
 
-
 USERS_MONITORING();
+
+
+
+
+
+function import_cws_product_test() {
+    wp_mail("renewedplains@gmail.com", "Marlys TEST", "TEST", null);
+}
+function import_batch() {
+    if ( ! wp_next_scheduled( 'import_batch' ) ) {
+        $timestamp = time();
+        wp_schedule_single_event( $timestamp + 60, 'import_batch' );
+    }
+}
+add_action( 'import_batch', 'import_cws_product_test' );
+
+import_batch();
+
 function bojett_settings() {
     global $table_prefix, $wpdb;
     if($_POST['set_settings']) {
-        wp_mail("renewedplains@gmail.com", "Notification TEST", "TEST", null);
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
         $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
