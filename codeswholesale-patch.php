@@ -129,7 +129,6 @@ function add_admin_menu_patch()
         '/wp-content/plugins/codeswholesale-patch/' . plugin_basename( 'img/bojett_icon_128x128.png' ),
         3
     );
-
     add_submenu_page(
         'cws-bojett-patch',
         __('Importer', 'codeswholesale-patch'),
@@ -146,18 +145,6 @@ function add_admin_menu_patch()
         'cws-bojett-settings',
         'bojett_settings'
     );
-
-    /*function run_my_script() {
-        echo 'hehehehe';
-    }
-    function USERS_MONITORING() {
-        if ( ! wp_next_scheduled( 'USERS_MONITORING' ) ) {
-            wp_schedule_event( time(), 'every_minute', 'USERS_MONITORING' );
-        }
-    }
-    add_action( 'USERS_MONITORING', 'run_my_script' );*/
-    //USERS_MONITORING();
-
 }
 add_action('admin_menu', 'add_admin_menu_patch');
 
@@ -171,14 +158,7 @@ function change_icon_style_end($buffer) {
 }
 
 if($_POST['set_settings']) {
-    function my_error_notice1() {
-        ?>
-        <div class="success notice notice-success">
-            <p><?php _e( 'Deine Einstellungen wurden erfolgreich geändert.', 'codeswholesale_patch' ); ?></p>
-        </div>
-        <?php
-    }
-    add_action( 'admin_notices', 'my_error_notice1' );
+
 }
 
 /*
@@ -187,19 +167,29 @@ if($_POST['set_settings']) {
 function run_cws_cron_script() {
     global $wpdb;
     $table_name = $wpdb->prefix . "bojett_auth_token";
-    $access_bearer = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
-    $access_expires_in = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+    $options_name = $wpdb->prefix . "bojett_credentials";
+    $access_bearer = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
+    $access_expires_in = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
+    $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
+    $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
+    $db_token = $access_bearer;
     $db_expires_in = $access_expires_in;
     $current_timestamp = time();
-    if($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
+
+    if ($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
+        if ($client_id == NULL || $client_secret == NULL) {
+            // Delete current bearer because no clientkeys are set
+            $table_name = $wpdb->prefix . "bojett_auth_token";
+            $wpdb->query("TRUNCATE TABLE $table_name");
+        }
         // Do nothing, the bearer is already up to date.
     } else {
         $options_name = $wpdb->prefix . "bojett_credentials";
-        $client_id = $wpdb->get_var('SELECT cws_client_id FROM '. $options_name);
-        $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM '. $options_name);
+        $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
+        $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
 
         $ch = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json' )); // Inject the token into the header
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json')); // Inject the token into the header
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
@@ -209,19 +199,11 @@ function run_cws_cron_script() {
         $new_bearer_expires = json_decode($result, true)['expires_in'];
         $new_db_expires_in = $current_timestamp + $new_bearer_expires;
         $table_name = $wpdb->prefix . "bojett_auth_token";
-        $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
-        if($current_access_bearer != NULL) {
-            $wpdb->query("TRUNCATE TABLE $table_name");
-            $wpdb->insert($table_name, array(
-                'cws_expires_in' => $new_db_expires_in,
-                'cws_access_token' => $new_bearer
-            ));
-        } else {
-            $wpdb->insert($table_name, array(
-                'cws_expires_in' => $new_db_expires_in,
-                'cws_access_token' => $new_bearer
-            ));
-        }
+        $wpdb->query("TRUNCATE TABLE $table_name");
+        $wpdb->insert($table_name, array(
+            'cws_expires_in' => $new_db_expires_in,
+            'cws_access_token' => $new_bearer
+        ));
     }
 }
 function USERS_MONITORING() {
@@ -239,7 +221,6 @@ USERS_MONITORING();
 function bojett_settings() {
     global $table_prefix, $wpdb;
     if($_POST['set_settings']) {
-        require_once('includes/bearer-refresh.php');
         wp_mail("renewedplains@gmail.com", "Notification TEST", "TEST", null);
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
@@ -266,6 +247,31 @@ function bojett_settings() {
                 array( '%s' )
             );
         }
+        require_once('includes/bearer-refresh.php');
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+        $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+        if($current_access_bearer != NULL && $current_access_bearer_expire != NULL) {
+            function bojett_settings_saved() {
+                ?>
+                <div class="success notice notice-success">
+                    <p><?php _e( 'Your settings have been successfully saved.', 'codeswholesale_patch' ); ?></p>
+                </div>
+                <?php
+            }
+            add_action( 'admin_notices', 'bojett_settings_saved' );
+            do_action( 'admin_notices' );
+        } else {
+            function bojett_settings_saved1() {
+                ?>
+                <div class="error notice">
+                    <p><?php _e( 'Connection to CodesWholesale failed. Check your input.', 'codeswholesale_patch' ); ?></p>
+                </div>
+                <?php
+            }
+            add_action( 'admin_notices', 'bojett_settings_saved1' );
+            do_action( 'admin_notices' );
+        }
     }
 
     $get_client_id = $wpdb->get_var('SELECT cws_client_id FROM '.$table_prefix.'bojett_credentials');
@@ -273,7 +279,10 @@ function bojett_settings() {
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">
-            <?php _e('Settings', 'codeswholesale_patch'); ?>
+            <?php _e('Settings', 'codeswholesale_patch'); ?></h1>
+        <h2 class="title"><?php _e('Get your API Keys', 'codeswholesale_patch'); ?></h2>
+        <p><?php _e('To enable us to import all products, you need an available account at <a href="https://codeswholesale.com" target="_blank">CodesWholesale.com</a>.
+                          In the backend of CWS you can look up and copy your API keys. This will generate a new authentication token so that your server can guarantee an outgoing connection and import all available product.', 'codeswholesale_patch'); ?></p>
             <form action="<?php echo $_SERVER['PHP_SELF']; ?>?page=cws-bojett-settings" method="post">
                 <table class="form-table" role="presentation">
 
