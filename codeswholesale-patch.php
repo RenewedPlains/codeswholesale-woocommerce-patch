@@ -206,17 +206,17 @@ function run_cws_cron_script() {
         ));
     }
 }
-function USERS_MONITORING() {
+function check_update_bearer_token() {
     global $wpdb;
-    if ( ! wp_next_scheduled( 'USERS_MONITORING' ) ) {
+    if ( ! wp_next_scheduled( 'check_update_bearer_token' ) ) {
         $table_name = $wpdb->prefix . "bojett_auth_token";
         $access_expires_in = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
-        wp_schedule_single_event( $access_expires_in, 'USERS_MONITORING' );
+        wp_schedule_single_event( $access_expires_in, 'check_update_bearer_token' );
     }
 }
-add_action( 'USERS_MONITORING', 'run_cws_cron_script' );
+add_action( 'check_update_bearer_token', 'run_cws_cron_script' );
 
-USERS_MONITORING();
+check_update_bearer_token();
 
 
 
