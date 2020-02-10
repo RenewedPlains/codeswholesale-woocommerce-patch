@@ -11,11 +11,9 @@ License: GPL2
 
 ob_start();
 
-function add_quick_style()
-{
-    return '<style>.toplevel_page_cws-bojett-patch img { margin-top:-4px}</style>';
-}
-add_action('init', 'add_quick_style');
+
+
+
 
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
@@ -157,10 +155,6 @@ function change_icon_style_end($buffer) {
     return str_replace('img/bojett_icon_128x128.png"','img/bojett_icon_128x128.png" style="max-width: 24px;margin-top:-3px;"', $buffer);
 }
 
-if($_POST['set_settings']) {
-
-}
-
 /*
  * Define and run Cronjob for refreshing the bearer in time
  */
@@ -188,13 +182,13 @@ function run_cws_cron_script() {
         $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
         $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
 
-        $ch = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json')); // Inject the token into the header
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-        $result = curl_exec($ch); // Execute the cURL statement
-        curl_close($ch); // Close the cURL connection*/
+        $chc = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
+        curl_setopt($chc, CURLOPT_HTTPHEADER, array('Content-Type: application/json')); // Inject the token into the header
+        curl_setopt($chc, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($chc, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($chc, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+        $result = curl_exec($chc); // Execute the cURL statement
+        curl_close($chc); // Close the cURL connection*/
         $new_bearer = json_decode($result, true)['access_token'];
         $new_bearer_expires = json_decode($result, true)['expires_in'];
         $new_db_expires_in = $current_timestamp + $new_bearer_expires;
@@ -215,25 +209,12 @@ function check_update_bearer_token() {
     }
 }
 add_action( 'check_update_bearer_token', 'run_cws_cron_script' );
-
 check_update_bearer_token();
 
 
 
 
-
-function import_cws_product_test() {
-    wp_mail("renewedplains@gmail.com", "Marlys TEST", "TEST", null);
-}
-function import_batch() {
-    if ( ! wp_next_scheduled( 'import_batch' ) ) {
-        $timestamp = time();
-        wp_schedule_single_event( $timestamp + 60, 'import_batch' );
-    }
-}
-add_action( 'import_batch', 'import_cws_product_test' );
-
-import_batch();
+//import_batch();
 
 function bojett_settings() {
     global $table_prefix, $wpdb;
@@ -359,16 +340,46 @@ if($db_expires_in > $current_timestamp) {
     $wpdb->update($table_name, array('expires_in' => $new_db_expires_in, 'access_token' => $new_bearer), array('scope' => 'administration'), array('%s', '%s'), array('%s'));
     curl_close($ch); // Close the cURL connection
 }
+function isa_add_cron_recurrence_interval( $schedules ) {
 
+    $schedules['every_minute'] = array(
+        'interval'  => 60,
+        'display'   => __( 'Every 1 Minute', 'textdomain' )
+    );
+
+    return $schedules;
+}
+add_filter( 'cron_schedules', 'isa_add_cron_recurrence_interval' );
+
+require_once ( ABSPATH . 'wp-content/plugins/codeswholesale-patch/importaction.php');
+
+
+function import_batch() {
+
+    //if ( ! wp_next_scheduled( 'import_batch' ) ) {
+    $timestamp = time();
+    wp_schedule_event( $timestamp + 30, 'every_minute', 'import_batch' );
+    //}
+}
+
+add_action( 'import_batch', 'import_cws_product' );
 
 
 
 
 
 function render_custom_link_page() {
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+    if($_GET['importstart'] == 'true') {
+
+
+        //do_action('import_batch');
+        //import_batch();
+    }
+
+
     echo '<div class="wrap">
     <h1>' . __("Product Import", "codeswholesale_patch") . '</h1>
-    
     <div class="importer_container"></div>
 
 <div class="clickme" style="margin-left:  400px; margin-top: 300px;">Klick Me</div>
