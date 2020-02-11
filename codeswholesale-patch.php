@@ -239,12 +239,15 @@ function bojett_settings() {
     if($_POST['set_settings']) {
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
+        $import_worker = $_POST['import_worker'];
+        $import_batch_size = $_POST['import_batch_size'];
         $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
         if($get_credentials_check === NULL) {
             $wpdb->insert($table_prefix.'bojett_credentials', array(
                 'cws_client_id' => $cws_client_id,
                 'cws_client_secret' => $cws_secret_id,
-                'batch_size' => '20',
+                'batch_size' => $import_batch_size,
+                'phpworker' => $import_worker,
             ));
         } else {
             $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$table_prefix.'bojett_credentials');
@@ -252,12 +255,16 @@ function bojett_settings() {
                 $table_prefix.'bojett_credentials',
                 array(
                     'cws_client_id' => $cws_client_id,
-                    'cws_client_secret' => $cws_secret_id
+                    'cws_client_secret' => $cws_secret_id,
+                    'batch_size' => $import_batch_size,
+                    'phpworker' => $import_worker
                 ),
                 array( 'id' => $get_credentials_id ),
                 array(
                     '%s',
-                    '%s'
+                    '%s',
+                    '%d',
+                    '%d'
                 ),
                 array( '%s' )
             );
@@ -291,6 +298,8 @@ function bojett_settings() {
 
     $get_client_id = $wpdb->get_var('SELECT cws_client_id FROM '.$table_prefix.'bojett_credentials');
     $get_client_secret = $wpdb->get_var('SELECT cws_client_secret FROM '.$table_prefix.'bojett_credentials');
+    $get_batch_size = $wpdb->get_var('SELECT batch_size FROM '.$table_prefix.'bojett_credentials');
+    $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$table_prefix.'bojett_credentials');
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">
@@ -300,16 +309,23 @@ function bojett_settings() {
                           In the backend of CWS you can look up and copy your API keys. This will generate a new authentication token so that your server can guarantee an outgoing connection and import all available product.', 'codeswholesale_patch'); ?></p>
             <form action="<?php echo $_SERVER['PHP_SELF']; ?>?page=cws-bojett-settings" method="post">
                 <table class="form-table" role="presentation">
-
                     <tbody><tr>
                         <th scope="row"><label for="cws_client_id"><?php _e('Your CWS API Client ID', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="cws_client_id" type="text" id="cws_client_id" value="<?php echo $get_client_id; ?>" class="regular-text"></td>
                     </tr>
-
                     <tr>
                         <th scope="row"><label for="cws_secret_id"><?php _e('Your CWS API Secret ID', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="cws_secret_id" type="text" id="cws_secret_id" aria-describedby="tagline-description" value="<?php echo $get_client_secret; ?>" class="regular-text">
-                            <p class="description" id="tagline-description">In a few words, explain what this site is about.</p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="import_worker"><?php _e('Import worker', 'codeswholesale_patch'); ?></label></th>
+                        <td><input name="import_worker" type="number" id="import_worker" aria-describedby="tagline-description" value="<?php echo $get_php_worker; ?>" class="regular-text">
+                            <p class="description" id="tagline-description">This plugin works with cronjobs. Select the number of cronjobs that will be executed by the PHP server. </p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="import_batch_size"><?php _e('Import batch size', 'codeswholesale_patch'); ?></label></th>
+                        <td><input name="import_batch_size" type="number" id="import_batch_size" aria-describedby="tagline-description" value="<?php echo $get_batch_size; ?>" class="regular-text">
+                            <p class="description" id="tagline-description">Number of games to be imported by one running cronjob.</p></td>
                     </tr>
                     </tbody>
                 </table>
@@ -328,7 +344,7 @@ function get_string_between($string, $start, $end){
     $ini += strlen($start);
     $len = strpos($string, $end, $ini) - $ini;
     return substr($string, $ini, $len);
-}
+}/*
 // Get the bearer authorizationcode from your database and recheck the expiringtime
 $table_name = $wpdb->prefix . "codeswholesale_access_tokens";
 $access_bearer = $wpdb->get_results( "SELECT expires_in, access_token FROM $table_name" );
@@ -357,12 +373,12 @@ if($db_expires_in > $current_timestamp) {
 
     $wpdb->update($table_name, array('expires_in' => $new_db_expires_in, 'access_token' => $new_bearer), array('scope' => 'administration'), array('%s', '%s'), array('%s'));
     curl_close($ch); // Close the cURL connection
-}
+}*/
 function isa_add_cron_recurrence_interval( $schedules ) {
 
-    $schedules['every_minute'] = array(
-        'interval'  => 60,
-        'display'   => __( 'Every 1 Minute', 'textdomain' )
+    $schedules['bojett_cws_import'] = array(
+        'interval'  => 30,
+        'display'   => __( 'Every 30 seconds', 'codeswholesale_patch' )
     );
 
     return $schedules;
@@ -371,50 +387,145 @@ add_filter( 'cron_schedules', 'isa_add_cron_recurrence_interval' );
 
 require_once ( ABSPATH . 'wp-content/plugins/codeswholesale-patch/importaction.php');
 
-
-function import_batch() {
-
-    //if ( ! wp_next_scheduled( 'import_batch' ) ) {
-    $timestamp = time();
-    wp_schedule_event( $timestamp + 30, 'every_minute', 'import_batch' );
-    //}
+if($_GET['importstart'] == 'true') {
+    $table_name = $wpdb->prefix . "bojett_import_worker";
+    $wpdb->query("TRUNCATE TABLE $table_name");
 }
 
-add_action( 'import_batch', 'import_cws_product' );
+$get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
+if($get_php_worker == '1') {
 
+    function import_batch() {
+        global $wpdb;
+        $table_title = $wpdb->prefix . 'bojett_import_worker';
+        $get_batch_size = $wpdb->get_var('SELECT batch_size FROM '.$wpdb->prefix.'bojett_credentials');
+        $wpdb->insert($table_title, array(
+            'name' => "import_batch",
+            'from' => "0",
+            'to' => $get_batch_size,
+            'last_product' => "0",
+            'last_update' => time(),
+        ));
+        $get_import_from = $wpdb->get_var('SELECT `from` FROM '.$wpdb->prefix.'bojett_import_worker');
+        $get_import_to = $wpdb->get_var('SELECT `to` FROM '.$wpdb->prefix.'bojett_import_worker');
+        $import_variable = 'import_batch';
+        if ( ! wp_next_scheduled( 'import_batch' ) ) {
+            $timestamp = time();
+            $from = $get_import_from;
+            $to = $get_import_to;
+            $table_name = $wpdb->prefix . "bojett_import_worker";
+            $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+            $args = array($from, $to, $import_variable);
+            wp_clear_scheduled_hook( $import_variable, $args );
+            wp_schedule_single_event( $timestamp + 30, 'import_batch', $args );
+        }
+    }
+    add_action( 'import_batch', 'import_cws_product', 1, 3 );
+} else {
+    for ($i = 0; $i <= $get_php_worker - 1; $i++) {
+        $iteratorfun = "import_batch_" . $i;
+        $$iteratorfun = function() {
+            global $iteratorfun;
+            global $i;
+            if ( ! wp_next_scheduled( 'import_batch_' . $i ) ) {
+                global $wpdb;
+                $get_batch_size = $wpdb->get_var('SELECT batch_size FROM ' . $wpdb->prefix . 'bojett_credentials');
+                $import_from = $i * $get_batch_size;
+                $import_to = $i * $get_batch_size + $get_batch_size;
+                $iteratorfun = "import_batch_" . $i;
+                $table_title = $wpdb->prefix . 'bojett_import_worker';
+                $import_variable = $iteratorfun;
+                $wpdb->insert($table_title, array(
+                    'name' => "$iteratorfun",
+                    'from' => $import_from,
+                    'to' => $import_to,
+                    'last_product' => "0",
+                    'last_update' => time(),
+                ));
 
+                $get_import_from = $wpdb->get_var('SELECT `from` FROM '.$wpdb->prefix.'bojett_import_worker WHERE `name` = "' . $iteratorfun .'"');
+                $get_import_to = $wpdb->get_var('SELECT `to` FROM '.$wpdb->prefix.'bojett_import_worker WHERE `name` = "' . $iteratorfun .'"');
+                $timestamp = time();
+                $from = $get_import_from;
+                $to = $get_import_to;
+                $table_name = $wpdb->prefix . "bojett_import_worker";
+                $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+                $args = array($from, $to, $import_variable);
+                wp_clear_scheduled_hook( $import_variable, $args );
+                wp_schedule_single_event($timestamp + 30, 'import_batch_' . $i, $args);
+            }
+        };
+        add_action( 'import_batch_' . $i, 'import_cws_product', 1, 3 );
+    }
+}
 
+if($_GET['importstart'] == 'true') {
 
+    //do_action('import_batch');
+    $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
+    if($get_php_worker == '1') {
+
+        import_batch();
+    } else {
+        for ($i = 0; $i <= $get_php_worker - 1; $i++) {
+
+            $$iteratorfun();
+        }
+    }
+}
 
 function render_custom_link_page() {
+    global $wpdb;
     require_once(ABSPATH . 'wp-admin/includes/image.php');
     if($_GET['importstart'] == 'true') {
-
-
-        //do_action('import_batch');
-        //import_batch();
+        function bojett_import_started() {
+            ?>
+            <div class="success notice notice-success">
+                <p><?php _e( 'Import started successfully. The import will also continue when you leave the page. Come back here to see the status of the import.', 'codeswholesale_patch' ); ?></p>
+            </div>
+            <?php
+        }
+        add_action( 'admin_notices', 'bojett_import_started' );
+        do_action( 'admin_notices' );
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+        $db_token = $current_access_bearer_expire;
+        $productcounter = count(json_decode(inital_puller($db_token, ""), true)['items']);
+        $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+        $wpdb->update(
+            $wpdb->prefix.'bojett_credentials',
+            array(
+                'importnumber' => $productcounter,
+                'productarray_id' => '0'
+            ),
+            array( 'id' => $get_credentials_id ),
+            array(
+                '%d',
+                '%d'
+            ),
+            array( '%d' )
+        );
     }
-
-
     echo '<div class="wrap">
-    <h1>' . __("Product Import", "codeswholesale_patch") . '</h1>
+    <h1 class="wp-heading-inline">' . __("Product Import", "codeswholesale_patch") . '</h1> 
+    <a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importstart=true" class="page-title-action">' . __('Start new import', 'codeswholesale_patch') . '</a>
+    <hr class="wp-header-end">
     <div class="importer_container"></div>
 
-<div class="clickme" style="margin-left:  400px; margin-top: 300px;">Klick Me</div>
-</div>'; ?>
-<script>
-jQuery(function() {
-    jQuery(".clickme").on("click", function() {
-        jQuery.ajax({
-  url: "/wp-content/plugins/codeswholesale-patch/importaction.php",
-}).done(function( data ) {
-    jQuery(".wrap h1").after('<div class="success notice-success notice importcall"><p><?php _e( 'Import started successfully. The import will also continue when you leave the page. Come back here to see the status of the import.', 'codeswholesale_patch' ); ?></p></div>');
-      jQuery(".importer_container").html(data);
-      console.log(data);
-  });
-    }); 
-});
-</script>
+    </div>'; ?>
+        <script>/*
+    jQuery(function() {
+        jQuery(".clickme").on("click", function() {
+            jQuery.ajax({
+      url: "/wp-content/plugins/codeswholesale-patch/importaction.php",
+    }).done(function( data ) {
+        jQuery(".wrap h1").after('<div class="success notice-success notice importcall"><p></p></div>');
+          jQuery(".importer_container").html(data);
+          console.log(data);
+      });
+        });
+    });*/
+    </script>
 <?php
 }
 

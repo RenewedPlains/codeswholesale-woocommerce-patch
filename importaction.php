@@ -1,4 +1,26 @@
 <?php
+function inital_puller($token, $resulti) {
+    if($resulti == '') {
+        $ch = curl_init('https://api.codeswholesale.com/v2/products'); // Initialise cURL
+//$post = json_encode($post); // Encode the data array into a JSON string
+        $authorization = "Authorization: Bearer " . $token; // Prepare the authorisation token
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//curl_setopt($ch, CURLOPT_POST, 1); // Specify the request method as POST
+//curl_setopt($ch, CURLOPT_POSTFIELDS, $post); // Set the posted fields
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+        $result = curl_exec($ch); // Execute the cURL statement
+        /*$myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
+        $stampi = date('d.m.Y - H:i:s');
+        $txt = "[" . $stampi . "] === Wurde frisch von CWS heruntergeladen mit Aufwand.... ";
+        fwrite($myfile, "\n". $txt);
+        fclose($myfile);*/
+        return $result;
+    } else {
+        return $resulti;
+    }
+}
+
 if($_GET['importstart'] == 'true') {
     set_time_limit(60);
     ini_set('memory_limit', '512M');
@@ -30,21 +52,21 @@ if($_GET['importstart'] == 'true') {
 
 }
 
-function import_cws_product() {
-
+function import_cws_product($from, $to, $import_variable) {
     set_time_limit(60);
     ini_set('memory_limit', '512M');
+    //ignore_user_abort(true);
     include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
     require_once( ABSPATH . 'wp-load.php' );
     require_once( ABSPATH . 'wp-config.php' );
 
-function find_empty_games( $cars, $position ) {
-    foreach($cars as $index => $car) {
-        if($car['name'] == $position) return $index;
+    function find_empty_games( $cars, $position ) {
+        foreach($cars as $index => $car) {
+            if($car['name'] == $position) return $index;
+        }
+        return FALSE;
     }
-    return FALSE;
-}
 
 function get_single_product( $productId )
 {
@@ -90,11 +112,6 @@ function get_single_product_description( $productId )
     } else {
         return false;
     }
-
-
-
-    //var_dump( json_decode( $result, true ));
-
 }
 
 function checktitle( $fix_title, $productId, $db_token )
@@ -134,11 +151,9 @@ function get_single_product_title( $productId )
 function get_single_product_categories( $productId )
 {
     global $wpdb;
-
     $table_name = $wpdb->prefix . "bojett_auth_token";
     $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
     $db_token = $current_access_bearer_expire;
-
     $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
     $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
@@ -147,7 +162,6 @@ function get_single_product_categories( $productId )
     $result = curl_exec($ch); // Execute the cURL statement
     $payload_array = explode(', ', json_decode($result, true)['category']);
     curl_close($ch); // Close the cURL connection
-
     return $payload_array;
 }
 
@@ -298,59 +312,23 @@ function inital_pull($token, $resulti) {
 
     curl_close($ch);
 
-
-
-// Ignoriere Abbruch durch den Benutzer und erlaube dem Skript weiterzulaufen
-    /*
-    if(connection_aborted()){
-        echo 'die  Zeit  ist um ';
-    }
-    function shutdown()
-    {
-        global $timestamp_start;
-        // Das ist unsere Shutdown Funktion, in welcher
-        // wir noch letzte Anweisungen ausführen können
-        // bevor die Ausführung beendet wird.
-        $timestamp_end = time();
-        $seconds_to_import = $timestamp_end - $timestamp_start;
-        $minute_to_import = $seconds_to_import / 60;
-        $hours_to_import = $minute_to_import / 60;
-        $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-        $txt = "Der gesamte Import scheint beendet zu sein und wurde innerhalb von " . $seconds_to_import . ' Sekunden (' . $minute_to_import . ' Minuten ODER ' . $hours_to_import . ' Stunden)';
-        fwrite($myfile, "\n". $txt);
-        fclose($myfile);
-    }
-
-    register_shutdown_function('shutdown');
-    //exit();
-    */
-
-    global $wpdb;
-
-    $importtime = array();
-
-    $table_name = $wpdb->prefix . "bojett_auth_token";
-    $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
-    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
-    $db_token = $current_access_bearer_expire;
-
-    $ch = curl_init('https://api.codeswholesale.com/v2/products'); // Initialise cURL
-    $authorization = "Authorization: Bearer ".$db_token; // Prepare the authorisation token
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json' , $authorization )); // Inject the token into the header
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-    $result = curl_exec($ch); // Execute the cURL statement
-    $result_array = json_decode($result,true);
-    $products_count = count(json_decode($result,true)['items']);
-
-    curl_close($ch);
     global $products_count, $result;
-    ignore_user_abort(true);
+    for ($i = $from; $i < $to; $i++) {
 
-    $batch = 8;
 
-    for ($i = 0; $i <= $batch + 1; $i++) {
-
+        $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+        $productarray = $i + 1;
+        $wpdb->update(
+            $wpdb->prefix.'bojett_credentials',
+            array(
+                'productarray_id' => $productarray
+            ),
+            array( 'id' => $get_credentials_id ),
+            array(
+                '%d'
+            ),
+            array( '%d' )
+        );
     //for ($i = 0; $i <= $products_count - 1; $i++) {
     global $wpdb;
     $table_name = $wpdb->prefix . "bojett_auth_token";
@@ -380,7 +358,6 @@ function inital_pull($token, $resulti) {
     $cws_productid = json_decode($result, true)['items'][$i]['productId']; // gets cws product id e.g. 04a8137c-0de9-42d4-8959-f15ca2567862
     error_log("ATTENTION, IMPORT PREPARE: " .$cws_productid);
 
-    //$hihi = array_search_multidim(json_decode($result, true)['items'], 'name', '');
 
     $productpicture = $thumb; // will return a single string for main productimage e.g. https://api.codeswholesale.com/v1/products/f62cab33-27ec-4c3d-a0ea-b3c7925c7fbf/image?format=MEDIUM
     $catalognumber = json_decode($result, true)['items'][$i]['identifier']; // gets cws product SKU as String e.g. "MMCOHEU"
@@ -573,11 +550,15 @@ function inital_pull($token, $resulti) {
     $wpdb->insert($table_title, array(
         'created_at' => time(),
         'import_id' => 'ID',
-        'name' => $producttitle, // ... and so on
+        'name' => $producttitle,
         'import_time' => time(),
         'product_id' => $post_id,
     ));
-
+        if($i == $to - 1) {
+            $table_name = $wpdb->prefix . "bojett_import_worker";
+            $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+            wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );
+        }
 }
     $stamp = time();
     $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
@@ -586,23 +567,8 @@ function inital_pull($token, $resulti) {
     fclose($myfile);
 
 
-
-
-
-
-
-
     //do_action('import_batch');
    // import_batch();
+
 }
 
-if($_GET['importstart'] == 'true') {
-    echo 'batch ist gleich i';
-    //do_action('import_batch');
-    import_batch();
-} else {
-    /*echo 'batch ist gleich i';
-    do_action('import_batch');
-    import_batch();
-
-    */}
