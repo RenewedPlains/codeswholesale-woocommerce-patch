@@ -41,7 +41,9 @@ function create_plugin_database_tables()
         $sql .= "  `cws_client_id`  varchar(128)  DEFAULT NULL, ";
         $sql .= "  `cws_client_secret`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `batch_size`  varchar(128)   DEFAULT NULL, ";
-        $sql .= "  `importnumber`  varchar(128)   DEFAULT NULL, ";
+        $sql .= "  `phpworker`  varchar(128)  NOT NULL DEFAULT '5', ";
+        $sql .= "  `importnumber`  varchar(128)  NOT NULL DEFAULT '20', ";
+        $sql .= "  `productarray_id`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (`id`) ";
         $sql .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
@@ -73,6 +75,22 @@ function create_plugin_database_tables()
         $sql3 .= "  PRIMARY KEY (`id`) ";
         $sql3 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql3);
+    }
+
+    $worker = 'bojett_import_worker';
+    $bojett_worker_table = $table_prefix . "$worker";
+    if($wpdb->get_var( "show tables like '$bojett_worker_table'" ) != $bojett_worker_table)
+    {
+        $sql4 = "CREATE TABLE `". $bojett_worker_table . "` ( ";
+        $sql4 .= "  `id`  int(11)   NOT NULL auto_increment, ";
+        $sql4 .= "  `name`  varchar(128)   NOT NULL, ";
+        $sql4 .= "  `from`  varchar(128)   NOT NULL, ";
+        $sql4 .= "  `to`  varchar(128)   NOT NULL, ";
+        $sql4 .= "  `last_product`  varchar(128)   NOT NULL, ";
+        $sql4 .= "  `last_update`  varchar(128)   NOT NULL, ";
+        $sql4 .= "  PRIMARY KEY (`id`) ";
+        $sql4 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        dbDelta($sql4);
     }
 }
 register_activation_hook( __FILE__, 'create_plugin_database_tables' );
