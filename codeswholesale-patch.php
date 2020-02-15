@@ -417,7 +417,7 @@ function isa_add_cron_recurrence_interval( $schedules ) {
     return $schedules;
 }
 add_filter( 'cron_schedules', 'isa_add_cron_recurrence_interval' );
-require_once ( plugins_url( 'importaction.php', __FILE__ ) );
+require_once ( plugin_dir_path( __FILE__ ) . "importaction.php");
 
 
 if($_GET['importstart'] == 'true') {
