@@ -138,7 +138,7 @@ function add_admin_menu_patch()
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page',
-        '/wp-content/plugins/codeswholesale-patch/' . plugin_basename( 'img/bojett_icon_128x128.png' ),
+         plugins_url( 'img/bojett_icon_128x128.png', __FILE__ ),
         3
     );
     add_submenu_page(
