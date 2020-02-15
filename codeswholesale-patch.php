@@ -39,6 +39,8 @@ function create_plugin_database_tables()
         $sql .= "  `batch_size`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `phpworker`  varchar(128)  NOT NULL DEFAULT '5', ";
         $sql .= "  `importnumber`  varchar(128)  NOT NULL DEFAULT '20', ";
+        $sql .= "  `description_language`  varchar(128)  NOT NULL DEFAULT 'English', ";
+        $sql .= "  `profit_margin_value`  varchar(128)  NOT NULL DEFAULT '10', ";
         $sql .= "  `productarray_id`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (`id`) ";
@@ -236,6 +238,8 @@ function bojett_settings() {
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
         $import_worker = $_POST['import_worker'];
+        $profit_margin_value = $_POST['profit_margin_value'];
+        $description_language = $_POST['description_language'];
         $import_batch_size = $_POST['import_batch_size'];
         $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
         if($get_credentials_check === NULL) {
@@ -244,6 +248,8 @@ function bojett_settings() {
                 'cws_client_secret' => $cws_secret_id,
                 'batch_size' => $import_batch_size,
                 'phpworker' => $import_worker,
+                'description_language' => $description_language,
+                'profit_margin_value' => $profit_margin_value,
             ));
         } else {
             $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$table_prefix.'bojett_credentials');
@@ -253,14 +259,18 @@ function bojett_settings() {
                     'cws_client_id' => $cws_client_id,
                     'cws_client_secret' => $cws_secret_id,
                     'batch_size' => $import_batch_size,
-                    'phpworker' => $import_worker
+                    'phpworker' => $import_worker,
+                    'description_language' => $description_language,
+                    'profit_margin_value' => $profit_margin_value,
                 ),
                 array( 'id' => $get_credentials_id ),
                 array(
                     '%s',
                     '%s',
                     '%d',
-                    '%d'
+                    '%d',
+                    '%s',
+                    '%s'
                 ),
                 array( '%s' )
             );
@@ -296,6 +306,8 @@ function bojett_settings() {
     $get_client_secret = $wpdb->get_var('SELECT cws_client_secret FROM '.$table_prefix.'bojett_credentials');
     $get_batch_size = $wpdb->get_var('SELECT batch_size FROM '.$table_prefix.'bojett_credentials');
     $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$table_prefix.'bojett_credentials');
+    $get_description_language = $wpdb->get_var('SELECT description_language FROM '.$table_prefix.'bojett_credentials');
+    $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$table_prefix.'bojett_credentials');
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">
@@ -327,6 +339,26 @@ function bojett_settings() {
                         <th scope="row"><label for="import_batch_size"><?php _e('Import batch size', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="import_batch_size" type="number" id="import_batch_size" aria-describedby="tagline-description" value="<?php echo $get_batch_size; ?>" class="regular-text">
                             <p class="description" id="tagline-description">Number of games to be imported by one running cronjob.</p></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <h2 class="title"><?php _e('Product settings', 'codeswholesale_patch'); ?></h2>
+                <table class="form-table" role="presentation">
+                    <tbody>
+                    <tr>
+                        <th scope="row"><label for="description_language"><?php _e('Description language', 'codeswholesale_patch'); ?></label></th>
+                        <td><select name="description_language">
+                                <?php //TODO: Add available languages from CWS ?>
+                                <option value="English"<?php if($get_description_language == 'English') { echo ' selected'; } ?>>English</option>
+                                <option value="German"<?php if($get_description_language == 'German') { echo ' selected'; } ?>>German</option>
+                                <option value="Italian"<?php if($get_description_language == 'Italian') { echo ' selected'; } ?>>Italian</option>
+                            </select>
+                            <p class="description" id="tagline-description">Select the language for the description imported from CodesWholesale.</p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="profit_margin_value"><?php _e('Profit margin value', 'codeswholesale_patch'); ?></label></th>
+                        <td><input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
+                            <p class="description" id="tagline-description">The product is imported in EUR. If your shop has set a different currency as the main currency, this has to be considered manually.</p></td>
                     </tr>
                     </tbody>
                 </table>

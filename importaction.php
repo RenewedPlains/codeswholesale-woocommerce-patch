@@ -101,11 +101,13 @@ function get_single_product_description( $productId )
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
     $result = curl_exec($ch); // Execute the cURL statement
     $payload_array = json_decode($result, true)['factSheets'];
+    $settings_table = $wpdb->prefix . "bojett_credentials";
+    $get_defined_import_language = $wpdb->get_var( "SELECT description_language FROM $settings_table" );
     curl_close($ch); // Close the cURL connection
 
     if(is_array($payload_array)) {
         foreach ($payload_array as $product_description) {
-            if ($product_description['territory'] == 'German') {
+            if ($product_description['territory'] == $get_defined_import_language && $product_description['description'] != '') {
                 return $product_description['description'];
             }
         }
@@ -399,7 +401,8 @@ function inital_pull($token, $resulti) {
     fclose($myfile);*/
 
     if($existcheck[0] >= 1 ) {
-        $setprice = $cws_productprice + 4;
+        $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
+        $setprice = $cws_productprice + $profit_margin_value;
         update_post_meta($existcheck[1], '_regular_price', $setprice);
         update_post_meta($existcheck[1], '_price', $setprice);
         update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
@@ -494,7 +497,7 @@ function inital_pull($token, $resulti) {
         $producttitle_set = $producttitle;
     }
     if ($productdescription == '') {
-        $productdescription_set = 'Inhalt ist in Kürze verfügbar.';
+        $productdescription_set = '';
     } else {
         $productdescription_set = $productdescription;
     }
@@ -505,8 +508,9 @@ function inital_pull($token, $resulti) {
         'post_status' => 'publish',
         'post_type' => "product",
     );
+    $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
     $post_id = wp_insert_post($post_pro);
-    $realprice = $cws_productprice + 4;
+    $realprice = $cws_productprice + $profit_margin_value;
     wp_set_object_terms($post_id, 'simple', 'product_type');
     update_post_meta($post_id, '_visibility', 'visible');
     update_post_meta($post_id, '_stock_status', 'instock');
