@@ -398,10 +398,12 @@ function inital_pull($token, $resulti) {
             $wpdb->prefix.'bojett_import_worker',
             array(
                 'last_product' => $i,
+                'last_update' => time()
             ),
             array( 'name' => $import_variable ),
             array(
                 '%d',
+                '%d'
             ),
             array( '%s' )
         );
@@ -422,10 +424,12 @@ function inital_pull($token, $resulti) {
                     $table_name,
                     array(
                         'from' => $from_new,
-                        'to' => $to_new
+                        'to' => $to_new,
+                        'last_update' => time()
                     ),
                     array( 'name' => $import_variable ),
                     array(
+                        '%d',
                         '%d',
                         '%d'
                     ),
@@ -584,9 +588,11 @@ function inital_pull($token, $resulti) {
             $wpdb->prefix.'bojett_import_worker',
             array(
                 'last_product' => $i,
+                'last_update' => time()
             ),
             array( 'name' => $import_variable ),
             array(
+                '%d',
                 '%d',
             ),
             array( '%s' )
@@ -597,10 +603,26 @@ function inital_pull($token, $resulti) {
             wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );
             $get_import_state = $wpdb->get_var('SELECT last_updated FROM ' . $wpdb->prefix . 'bojett_credentials');
             $get_batch_size = $wpdb->get_var('SELECT batch_size FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $get_worker = $wpdb->get_var('SELECT phpworker FROM ' . $wpdb->prefix . 'bojett_credentials');
             $check_number = is_numeric(substr($import_variable, -1, 1));
             if($check_number === true) {
-                $from_new = 0;
-                $to_new = 0;
+                $from_new = $from + ($get_batch_size * $get_worker);
+                $to_new = $from_new + $get_batch_size;
+                $wpdb->update(
+                    $table_name,
+                    array(
+                        'from' => $from_new,
+                        'to' => $to_new,
+                        'last_update' => time()
+                    ),
+                    array( 'name' => $import_variable ),
+                    array(
+                        '%d',
+                        '%d',
+                        '%d'
+                    ),
+                    array( '%s' )
+                );
             } else {
                 $from_new = $to;
                 $to_new = $to + $get_batch_size;
@@ -608,10 +630,12 @@ function inital_pull($token, $resulti) {
                     $table_name,
                     array(
                         'from' => $from_new,
-                        'to' => $to_new
+                        'to' => $to_new,
+                        'last_update' => time()
                     ),
                     array( 'name' => $import_variable ),
                     array(
+                        '%d',
                         '%d',
                         '%d'
                     ),
