@@ -237,10 +237,22 @@ function bojett_settings() {
     if($_POST['set_settings']) {
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
-        $import_worker = $_POST['import_worker'];
-        $profit_margin_value = $_POST['profit_margin_value'];
+        if($_POST['import_worker'] != '') {
+            $import_worker = $_POST['import_worker'];
+        } else {
+            $import_worker = '1';
+        }
+        if($_POST['import_batch_size'] != '') {
+            $import_batch_size = $_POST['import_batch_size'];
+        } else {
+            $import_batch_size = '20';
+        }
+        if($_POST['profit_margin_value'] != '') {
+            $profit_margin_value = $_POST['profit_margin_value'];
+        } else {
+            $profit_margin_value = '10';
+        }
         $description_language = $_POST['description_language'];
-        $import_batch_size = $_POST['import_batch_size'];
         $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
         if($get_credentials_check === NULL) {
             $wpdb->insert($table_prefix.'bojett_credentials', array(
