@@ -11,10 +11,6 @@ License: GPL2
 
 ob_start();
 
-
-
-
-
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
 require_once( ABSPATH . 'wp-load.php' );
@@ -394,7 +390,6 @@ if($_GET['importstart'] == 'true') {
 
 $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
 if($get_php_worker == '1') {
-
     function import_batch() {
         global $wpdb;
         $table_title = $wpdb->prefix . 'bojett_import_worker';
@@ -464,19 +459,46 @@ if($_GET['importstart'] == 'true') {
     //do_action('import_batch');
     $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
     if($get_php_worker == '1') {
-
         import_batch();
     } else {
         for ($i = 0; $i <= $get_php_worker - 1; $i++) {
-
             $$iteratorfun();
         }
     }
+} elseif($_GET['importabort'] == 'true') {
+    $get_cred_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+    $wpdb->update(
+        $wpdb->prefix.'bojett_credentials',
+        array(
+            'last_updated' => 'ABORTED'
+        ),
+        array( 'id' => $get_cred_id ),
+        array(
+            '%s'
+        ),
+        array( '%d' )
+    );
 }
 
 function render_custom_link_page() {
     global $wpdb;
     require_once(ABSPATH . 'wp-admin/includes/image.php');
+    $get_importstate = $wpdb->get_var('SELECT last_updated FROM '.$wpdb->prefix.'bojett_credentials');
+    $active_workers = $wpdb->get_results("SELECT * from "  .$wpdb->prefix . "bojett_import_worker WHERE id != ''");
+    if($get_importstate == 'ABORTED' && count($active_workers) == 0) {
+        $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+        $wpdb->update(
+            $wpdb->prefix.'bojett_credentials',
+            array(
+                'last_updated' => '',
+            ),
+            array( 'id' => $get_credentials_id ),
+            array(
+                '%s',
+            ),
+            array( '%d' )
+        );
+    }
     if($_GET['importstart'] == 'true') {
         function bojett_import_started() {
             ?>
