@@ -447,8 +447,41 @@ function isa_add_cron_recurrence_interval( $schedules ) {
 add_filter( 'cron_schedules', 'isa_add_cron_recurrence_interval' );
 require_once ( plugin_dir_path( __FILE__ ) . "importaction.php");
 
+function bojett_import_struggle() {
+    ?>
+    <div class="error notice">
+        <p><?php _e( '<b>Uhoh!</b> It seems the importer got stuck. <a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&forcekill=true">Click here</a> to force the import to stop. <a href="https://github.com/RenewedPlains/codeswholesale-woocommerce-patch" target="_blank">Please inform me</a> about the problem if it persists.', 'codeswholesale_patch' ); ?></p>
+    </div>
+    <?php
+}
+function bojett_import_killed() {
+    ?>
+    <div class="success notice-success notice">
+        <p><?php _e( 'The importer was interrupted and removed. Please try the import again again. <a href="https://github.com/RenewedPlains/codeswholesale-woocommerce-patch" target="_blank">Please inform me</a> about the problem if it persists.', 'codeswholesale_patch' ); ?></p>
+    </div>
+    <?php
+}
 
-if($_GET['importstart'] == 'true') {
+function validate_importer()
+{
+    global $wpdb;
+    $import_worker_last_update = $wpdb->get_results('SELECT `last_update` FROM '.$wpdb->prefix.'bojett_import_worker');
+    foreach($import_worker_last_update as $last_time) {
+        if($last_time->last_update + 360 < time()) {
+
+            if($_GET['forcekill'] == 'true') {
+                $table_name = $wpdb->prefix . "bojett_import_worker";
+                $wpdb->query("TRUNCATE TABLE $table_name");
+                add_action( 'admin_notices', 'bojett_import_killed' );
+            } else {
+                add_action( 'admin_notices', 'bojett_import_struggle' );
+            }
+        }
+    }
+}
+validate_importer();
+
+if($_GET['importstart'] == 'true' && $_POST['importstart']) {
     $table_name = $wpdb->prefix . "bojett_import_worker";
     $wpdb->query("TRUNCATE TABLE $table_name");
 }
@@ -515,7 +548,7 @@ if($get_php_worker == '1') {
     }
 }
 
-if($_GET['importstart'] == 'true') {
+if($_GET['importstart'] == 'true' && $_POST['importstart']) {
 
     //do_action('import_batch');
     $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
@@ -560,7 +593,7 @@ function render_custom_link_page() {
             array( '%d' )
         );
     }
-    if($_GET['importstart'] == 'true') {
+    if($_GET['importstart'] == 'true' && $_POST['importstart']) {
         function bojett_import_started() {
             ?>
             <div class="success notice notice-success">
@@ -588,12 +621,13 @@ function render_custom_link_page() {
             ),
             array( '%d' )
         );
+        unset($_POST['importstart']);
     }
     echo '<div class="wrap">
     <h1 class="wp-heading-inline">' . __("Product Import", "codeswholesale_patch") . '</h1>';
     $result_check = $wpdb->get_results("SELECT * from "  .$wpdb->prefix . "bojett_import_worker WHERE id != ''");
     if( count( $result_check ) == 0 ) {
-        echo '<a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importstart=true" class="page-title-action">' . __('Start new import', 'codeswholesale_patch') . '</a>';
+        echo '<form style="display: inline;" action="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importstart=true" method="POST"><input type="submit" value="' . __('Start new import', 'codeswholesale_patch') . '" name="importstart" href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importstart=true" class="page-title-action" /></form>';
     } else {
         echo '<style>.red-abort-import-button { color: red !important; border-color: red !important; margin-right: 10px !important; } </style>';
         $get_importstate = $wpdb->get_var('SELECT last_updated FROM '.$wpdb->prefix.'bojett_credentials');
