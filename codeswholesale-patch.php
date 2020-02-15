@@ -313,6 +313,11 @@ function bojett_settings() {
                         <th scope="row"><label for="cws_secret_id"><?php _e('Your CWS API Secret ID', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="cws_secret_id" type="text" id="cws_secret_id" aria-describedby="tagline-description" value="<?php echo $get_client_secret; ?>" class="regular-text">
                     </tr>
+                    </tbody>
+                </table><br />
+                <h2 class="title"><?php _e('Import settings', 'codeswholesale_patch'); ?></h2>
+                <table class="form-table" role="presentation">
+                    <tbody>
                     <tr>
                         <th scope="row"><label for="import_worker"><?php _e('Import worker', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="import_worker" type="number" id="import_worker" aria-describedby="tagline-description" value="<?php echo $get_php_worker; ?>" class="regular-text">
@@ -529,9 +534,20 @@ function render_custom_link_page() {
         );
     }
     echo '<div class="wrap">
-    <h1 class="wp-heading-inline">' . __("Product Import", "codeswholesale_patch") . '</h1> 
-    <a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importstart=true" class="page-title-action">' . __('Start new import', 'codeswholesale_patch') . '</a>
-    <hr class="wp-header-end">
+    <h1 class="wp-heading-inline">' . __("Product Import", "codeswholesale_patch") . '</h1>';
+    $result_check = $wpdb->get_results("SELECT * from "  .$wpdb->prefix . "bojett_import_worker WHERE id != ''");
+    if( count( $result_check ) == 0 ) {
+        echo '<a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importstart=true" class="page-title-action">' . __('Start new import', 'codeswholesale_patch') . '</a>';
+    } else {
+        echo '<style>.red-abort-import-button { color: red !important; border-color: red !important; margin-right: 10px !important; } </style>';
+        $get_importstate = $wpdb->get_var('SELECT last_updated FROM '.$wpdb->prefix.'bojett_credentials');
+        if($get_importstate != 'ABORTED') {
+            echo '<a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importabort=true" class="page-title-action red-abort-import-button">' . __('Stop current import', 'codeswholesale_patch') . '</a>';
+        }
+        $get_importnumber = $wpdb->get_var('SELECT importnumber FROM '.$wpdb->prefix.'bojett_credentials');
+        echo '<code>' . $get_importnumber . ' products were totally imported</code>';
+    }
+    echo '<hr class="wp-header-end">
     <div class="importer_container"></div>
 
     </div>'; ?>
