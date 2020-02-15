@@ -413,8 +413,6 @@ if($get_php_worker == '1') {
             $timestamp = time();
             $from = $get_import_from;
             $to = $get_import_to;
-            $table_name = $wpdb->prefix . "bojett_import_worker";
-            $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
             $args = array($from, $to, $import_variable);
             wp_clear_scheduled_hook( $import_variable, $args );
             wp_schedule_single_event( $timestamp + 30, 'import_batch', $args );
@@ -448,8 +446,6 @@ if($get_php_worker == '1') {
                 $timestamp = time();
                 $from = $get_import_from;
                 $to = $get_import_to;
-                $table_name = $wpdb->prefix . "bojett_import_worker";
-                $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
                 $args = array($from, $to, $import_variable);
                 wp_clear_scheduled_hook( $import_variable, $args );
                 wp_schedule_single_event($timestamp + 30, 'import_batch_' . $i, $args);
