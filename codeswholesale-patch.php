@@ -94,6 +94,22 @@ function create_plugin_database_tables()
 register_activation_hook( __FILE__, 'create_plugin_database_tables' );
 
 
+function delete_bojett_tables() {
+    global $wpdb;
+    $sql = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_auth_token';
+    $wpdb->query($sql);
+
+    $sql2 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_credentials';
+    $wpdb->query($sql2);
+
+    $sql3 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import';
+    $wpdb->query($sql3);
+
+    $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
+    $wpdb->query($sql4);
+}
+register_deactivation_hook( __FILE__, 'delete_bojett_tables' );
+
 /*
  * Check if the original codeswholesale plugin installed and activated.
  */
