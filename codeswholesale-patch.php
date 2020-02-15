@@ -96,7 +96,7 @@ register_activation_hook( __FILE__, 'create_plugin_database_tables' );
  * Check if the original codeswholesale plugin installed and activated.
  */
 
-/*
+
 add_action( 'plugins_loaded', 'check_codeswholesale_plugin', 100 );
 function check_codeswholesale_plugin()
 {
@@ -106,11 +106,11 @@ function check_codeswholesale_plugin()
         function conf_remember() {
             ?>
             <div class="error notice">
-                <p><?php _e( 'Plugin ist activated but not configured yet. Please configure the original plugin - we can start after that with the import! ', 'codeswholesale_patch' ); ?></p>
+                <p><?php _e( 'Plugin is activated but not configured yet. Please configure the original plugin - we can start after that with the import! ', 'codeswholesale_patch' ); ?></p>
             </div>
             <?php
         }
-        add_action( 'admin_notices', 'my_error_notice' );
+        add_action( 'admin_notices', 'my_error_notice' );*/
     } else {
         deactivate_plugins( plugin_basename( __FILE__ ) );
         unset($_GET['activate']);
@@ -125,7 +125,7 @@ function check_codeswholesale_plugin()
         add_action( 'admin_notices', 'my_error_notice' );
     }
 }
-*/
+
 
 /*
  * Add the plugin to the admin menu with a own page.
