@@ -417,8 +417,8 @@ function isa_add_cron_recurrence_interval( $schedules ) {
     return $schedules;
 }
 add_filter( 'cron_schedules', 'isa_add_cron_recurrence_interval' );
+require_once ( plugins_url( 'importaction.php', __FILE__ ) );
 
-require_once ( ABSPATH . 'wp-content/plugins/codeswholesale-patch/importaction.php');
 
 if($_GET['importstart'] == 'true') {
     $table_name = $wpdb->prefix . "bojett_import_worker";
