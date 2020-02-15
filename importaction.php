@@ -408,6 +408,53 @@ function inital_pull($token, $resulti) {
         $txt = "Produkt existiert bereits, wird also nicht importiert, sondern aktualisiert: " . $producttitle;
         fwrite($myfile, "\n". $txt);
         fclose($myfile);
+        set_time_limit(60);
+        $wpdb->update(
+            $wpdb->prefix.'bojett_import_worker',
+            array(
+                'last_product' => $i,
+            ),
+            array( 'name' => $import_variable ),
+            array(
+                '%d',
+            ),
+            array( '%s' )
+        );
+        if($i == ($to - 1)) {
+            $timestamp = time();
+            $table_name = $wpdb->prefix . "bojett_import_worker";
+            wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );
+            $get_import_state = $wpdb->get_var('SELECT last_updated FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $get_batch_size = $wpdb->get_var('SELECT batch_size FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $check_number = is_numeric(substr($import_variable, -1, 1));
+            if($check_number === true) {
+                $from_new = 0;
+                $to_new = 0;
+            } else {
+                $from_new = $to;
+                $to_new = $to + $get_batch_size;
+                $wpdb->update(
+                    $table_name,
+                    array(
+                        'from' => $from_new,
+                        'to' => $to_new
+                    ),
+                    array( 'name' => $import_variable ),
+                    array(
+                        '%d',
+                        '%d'
+                    ),
+                    array( '%s' )
+                );
+            }
+            if($get_import_state != 'ABORTED') {
+                add_action( $import_variable, 'import_cws_product', 1, 3 );
+                wp_schedule_single_event( $timestamp + 30, $import_variable, array( "$from_new", "$to_new", $import_variable ) );
+            } else {
+                $table_name = $wpdb->prefix . "bojett_import_worker";
+                $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+            }
+        }
         continue;
     }
     $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
@@ -554,21 +601,51 @@ function inital_pull($token, $resulti) {
         'import_time' => time(),
         'product_id' => $post_id,
     ));
-        if($i == $to - 1) {
+        $wpdb->update(
+            $wpdb->prefix.'bojett_import_worker',
+            array(
+                'last_product' => $i,
+            ),
+            array( 'name' => $import_variable ),
+            array(
+                '%d',
+            ),
+            array( '%s' )
+        );
+        if($i == ($to - 1)) {
+            $timestamp = time();
             $table_name = $wpdb->prefix . "bojett_import_worker";
-            $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
             wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );
+            $get_import_state = $wpdb->get_var('SELECT last_updated FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $get_batch_size = $wpdb->get_var('SELECT batch_size FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $check_number = is_numeric(substr($import_variable, -1, 1));
+            if($check_number === true) {
+                $from_new = 0;
+                $to_new = 0;
+            } else {
+                $from_new = $to;
+                $to_new = $to + $get_batch_size;
+                $wpdb->update(
+                    $table_name,
+                    array(
+                        'from' => $from_new,
+                        'to' => $to_new
+                    ),
+                    array( 'name' => $import_variable ),
+                    array(
+                        '%d',
+                        '%d'
+                    ),
+                    array( '%s' )
+                );
+            }
+            if($get_import_state != 'ABORTED') {
+                add_action( $import_variable, 'import_cws_product', 1, 3 );
+                wp_schedule_single_event( $timestamp + 30, $import_variable, array( "$from_new", "$to_new", $import_variable ) );
+            } else {
+                $table_name = $wpdb->prefix . "bojett_import_worker";
+                $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+            }
         }
+    }
 }
-    $stamp = time();
-    $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-    $txt = "[" . $stamp . "] === Funktion wurde bis zum Schluss einmal ausgeführt. " . $producttitle . ' -> Bojett Produkt ID: ' .$post_id . ' innerhalb von ' . $time_for_product . ' Sekunden (' . $time_for_product_s . ' Sekunden ODER ' . $time_for_product_s / 60 . ' Minuten)';
-    fwrite($myfile, "\n". $txt);
-    fclose($myfile);
-
-
-    //do_action('import_batch');
-   // import_batch();
-
-}
-
