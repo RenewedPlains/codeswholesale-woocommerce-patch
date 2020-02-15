@@ -10,11 +10,6 @@ function inital_puller($token, $resulti) {
 //curl_setopt($ch, CURLOPT_POSTFIELDS, $post); // Set the posted fields
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
         $result = curl_exec($ch); // Execute the cURL statement
-        /*$myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-        $stampi = date('d.m.Y - H:i:s');
-        $txt = "[" . $stampi . "] === Wurde frisch von CWS heruntergeladen mit Aufwand.... ";
-        fwrite($myfile, "\n". $txt);
-        fclose($myfile);*/
         return $result;
     } else {
         return $resulti;
@@ -39,10 +34,7 @@ if($_GET['importstart'] == 'true') {
         $seconds_to_import = $timestamp_end - $timestamp_start;
         $minute_to_import = $seconds_to_import / 60;
         $hours_to_import = $minute_to_import / 60;
-        $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-        $txt = "Der gesamte Import scheint beendet zu sein und wurde innerhalb von " . $seconds_to_import . ' Sekunden (' . $minute_to_import . ' Minuten ODER ' . $hours_to_import . ' Stunden)';
-        fwrite($myfile, "\n". $txt);
-        fclose($myfile);
+
     }
 
     register_shutdown_function('shutdown');
@@ -280,11 +272,7 @@ function inital_pull($token, $resulti) {
 //curl_setopt($ch, CURLOPT_POSTFIELDS, $post); // Set the posted fields
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
         $result = curl_exec($ch); // Execute the cURL statement
-        /*$myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-        $stampi = date('d.m.Y - H:i:s');
-        $txt = "[" . $stampi . "] === Wurde frisch von CWS heruntergeladen mit Aufwand.... ";
-        fwrite($myfile, "\n". $txt);
-        fclose($myfile);*/
+
         return $result;
     } else {
         return $resulti;
@@ -382,10 +370,7 @@ function inital_pull($token, $resulti) {
     $producttitle = get_single_product_title($cws_productid); // will return producttitle in german as string
 
     if($producttitle == '' || $producttitle == ' ') {
-        $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-        $txt = "Dieses Produkt hat keinen Namen oder Titel. Wird geskipped... " .  $cws_productid;
-        fwrite($myfile, "\n". $txt);
-        fclose($myfile);
+
         continue;
     }
 
@@ -407,10 +392,7 @@ function inital_pull($token, $resulti) {
         update_post_meta($existcheck[1], '_price', $setprice);
         update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
         wc_update_product_stock($existcheck[1], $cws_quantity, 'set');
-        $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-        $txt = "Produkt existiert bereits, wird also nicht importiert, sondern aktualisiert: " . $producttitle;
-        fwrite($myfile, "\n". $txt);
-        fclose($myfile);
+
         set_time_limit(60);
         $wpdb->update(
             $wpdb->prefix.'bojett_import_worker',
@@ -460,10 +442,6 @@ function inital_pull($token, $resulti) {
         }
         continue;
     }
-    $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-    $txt = "Produkt existiert nicht, wird also importiert: " . $producttitle;
-    fwrite($myfile, "\n". $txt);
-    fclose($myfile);
     if ($productcategories[0] != "") {
 
         $tager = [];
@@ -591,10 +569,7 @@ function inital_pull($token, $resulti) {
     $twiggle = $i - 1;
     $time_for_product = $importtime[$i] - $importtime[$twiggle];
     $time_for_product_s = $importtime[$i] - $timestamp_start;
-    $myfile = fopen(ABSPATH . "tmp/php-error.log", "a") or die("Unable to open file!");
-    $txt = "[" . $stamp . "] === Produkt wurde erfolgreich aktualisiert und abgeschlossen: " . $producttitle . ' -> Bojett Produkt ID: ' .$post_id . ' innerhalb von ' . $time_for_product . ' Sekunden (' . $time_for_product_s . ' Sekunden ODER ' . $time_for_product_s / 60 . ' Minuten)';
-    fwrite($myfile, "\n". $txt);
-    fclose($myfile);
+
 
     global $wpdb;
     $table_title = $wpdb->prefix . 'codeswholesale_postback_import_details';
