@@ -31,3 +31,5 @@ languages/codeswholesale_patch-de_DE-backup-202002171508010.po~
 *.pot~
 
 codeswholesale_patch-de_DE-backup-202002171419530.po~
+
+.idea/

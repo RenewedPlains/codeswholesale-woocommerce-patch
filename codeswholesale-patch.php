@@ -4,7 +4,7 @@ Plugin Name: Bojett Codeswholesale Patch
 Description: Currently the codeswholesale importer for WooCommerce is not working. This patch provides a new importer to import all products from CWS.
 Text Domain: codeswholesale_patch
 Depends: WooCommerce
-Version: 1.0.0
+Version: 0.8.4
 Author: Mario Freuler, Bojett.com
 License: GPL2
 */
