@@ -8,9 +8,9 @@ For testing purposes only. This plugin is not yet fully developed and may contai
 
 ## What is it?
 This Wordpress plugin was developed because the official [Codeswholesale for WooCommerce](https://wordpress.org/plugins/codeswholesale-for-woocommerce/ "CodesWholesale for WooCommerce") cannot import products 
-and, for example, produces errors with the message "AWAITING". 
+and, for example, produces weird messages like "AWAITING" or "already reported". 
               
-With this patch it is possible to import all products via cron. The dispatch of game codes,
+With this patch it is possible to import all products via cron (WPCron or external cron). The dispatch of game codes,
 and the check for sufficient credit at CWS is still done by the official plugin. The patch
 will be developed further until a version is created which completely replaces the official plugin.
 
