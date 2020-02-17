@@ -254,6 +254,17 @@ check_update_bearer_token();
 
 function bojett_settings() {
     global $table_prefix, $wpdb;
+    if($_GET['notvalid'] == 'true') {
+        function bojett_settings_notfound() {
+            ?>
+            <div class="error notice">
+                <p><?php _e( 'First connect to Codeswholesale so that you can start importing products.', 'codeswholesale_patch' ); ?></p>
+            </div>
+            <?php
+        }
+        add_action( 'admin_notices', 'bojett_settings_notfound' );
+        do_action( 'admin_notices' );
+    }
     if($_POST['set_settings']) {
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
@@ -580,6 +591,12 @@ if($_GET['importstart'] == 'true' && $_POST['importstart']) {
 
 function render_custom_link_page() {
     global $wpdb;
+    $get_acct = $wpdb->get_var('SELECT cws_access_token FROM '.$wpdb->prefix.'bojett_auth_token');
+    $get_exp = $wpdb->get_var('SELECT cws_expires_in FROM '.$wpdb->prefix.'bojett_auth_token');
+
+    if($get_acct == '' || $get_exp < time()) {
+        header("Location: admin.php?page=cws-bojett-settings&notvalid=true");
+    }
     require_once(ABSPATH . 'wp-admin/includes/image.php');
     $get_importstate = $wpdb->get_var('SELECT last_updated FROM '.$wpdb->prefix.'bojett_credentials');
     $active_workers = $wpdb->get_results("SELECT * from "  .$wpdb->prefix . "bojett_import_worker WHERE id != ''");
