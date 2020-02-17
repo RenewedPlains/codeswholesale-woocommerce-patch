@@ -1,0 +1,172 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Bojett Codeswholesale Patch\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-02-17 13:56+0000\n"
+"PO-Revision-Date: 2020-02-17 13:57+0000\n"
+"Last-Translator: bojett <renewedplains@gmail.com>\n"
+"Language-Team: \n"
+"Language: en_US\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.3.1; wp-5.3.2"
+
+#: codeswholesale-patch.php:453
+msgid ""
+"?page=cws-bojett-patch&forcekill=true\">Click here</a> to force the import "
+"to stop. <a href=\"https://github.com/RenewedPlains/codeswholesale-"
+"woocommerce-patch\" target=\"_blank\">Please inform me</a> about the problem "
+"if it persists."
+msgstr ""
+
+#. Name of the plugin
+msgid "Bojett Codeswholesale Patch"
+msgstr ""
+
+#: codeswholesale-patch.php:324
+msgid "Connection to CodesWholesale failed. Check your input."
+msgstr ""
+
+#. Description of the plugin
+msgid ""
+"Currently the codeswholesale importer for WooCommerce is not working. This "
+"patch provides a new importer to import all products from CWS."
+msgstr ""
+
+#: codeswholesale-patch.php:377
+msgid "Description language"
+msgstr ""
+
+#: codeswholesale-patch.php:380
+msgid "English"
+msgstr ""
+
+#: codeswholesale-patch.php:442
+msgid "Every 30 seconds"
+msgstr ""
+
+#: codeswholesale-patch.php:381
+msgid "German"
+msgstr ""
+
+#: codeswholesale-patch.php:343
+msgid "Get your API Keys"
+msgstr ""
+
+#: codeswholesale-patch.php:367
+msgid "Import batch size"
+msgstr ""
+
+#: codeswholesale-patch.php:358
+msgid "Import settings"
+msgstr ""
+
+#: codeswholesale-patch.php:600
+msgid ""
+"Import started successfully. The import will also continue when you leave "
+"the page. Come back here to see the status of the import."
+msgstr ""
+
+#: codeswholesale-patch.php:362
+msgid "Import worker"
+msgstr ""
+
+#: codeswholesale-patch.php:382
+msgid "Italian"
+msgstr ""
+
+#. Author of the plugin
+msgid "Mario Freuler, Bojett.com"
+msgstr ""
+
+#: codeswholesale-patch.php:369
+msgid "Number of games to be imported by one running cronjob."
+msgstr ""
+
+#: codeswholesale-patch.php:139
+msgid ""
+"Plugin could not be activated. Please download the official plugin from <a "
+"href=\"/wp-admin/plugin-install.php?s=codeswholesale&tab=search&type=term\">"
+"Codeswholesale</a> and configure it. "
+msgstr ""
+
+#: codeswholesale-patch.php:627
+msgid "Product Import"
+msgstr ""
+
+#: codeswholesale-patch.php:373
+msgid "Product settings"
+msgstr ""
+
+#: codeswholesale-patch.php:638
+msgid "products were totally imported"
+msgstr ""
+
+#: codeswholesale-patch.php:387
+msgid "Profit margin value"
+msgstr ""
+
+#: codeswholesale-patch.php:393
+msgid "Save Changes"
+msgstr ""
+
+#: codeswholesale-patch.php:384
+msgid "Select the language for the description imported from CodesWholesale."
+msgstr ""
+
+#: codeswholesale-patch.php:342
+msgid "Settings"
+msgstr ""
+
+#: codeswholesale-patch.php:630
+msgid "Start new import"
+msgstr ""
+
+#: codeswholesale-patch.php:635
+msgid "Stop current import"
+msgstr ""
+
+#: codeswholesale-patch.php:460
+msgid ""
+"The importer was interrupted and removed. Please try the import again again. "
+"<a href=\"https://github.com/RenewedPlains/codeswholesale-woocommerce-"
+"patch\" target=\"_blank\">Please inform me</a> about the problem if it "
+"persists."
+msgstr ""
+
+#: codeswholesale-patch.php:389
+msgid ""
+"The product is imported in EUR. If your shop has set a different currency as "
+"the main currency, this has to be considered manually."
+msgstr ""
+
+#: codeswholesale-patch.php:364
+msgid ""
+"This plugin works with cronjobs. Select the number of cronjobs that will be "
+"executed by the PHP server."
+msgstr ""
+
+#: codeswholesale-patch.php:344
+msgid ""
+"To enable us to import all products, you need an available account at <a "
+"href=\"https://codeswholesale.com\" target=\"_blank\">CodesWholesale.com</a>."
+"\n"
+"                          In the backend of CWS you can look up and copy "
+"your API keys. This will generate a new authentication token so that your "
+"server can guarantee an outgoing connection and import all available product."
+msgstr ""
+
+#: codeswholesale-patch.php:349
+msgid "Your CWS API Client ID"
+msgstr ""
+
+#: codeswholesale-patch.php:353
+msgid "Your CWS API Secret ID"
+msgstr ""
+
+#: codeswholesale-patch.php:314
+msgid "Your settings have been successfully saved."
+msgstr ""

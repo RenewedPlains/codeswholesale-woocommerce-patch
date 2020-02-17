@@ -17,6 +17,11 @@ require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
 global $wpdb;
 
+function load_bojett_translations() {
+    load_plugin_textdomain( 'codeswholesale_patch', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+}
+add_action('init', 'load_bojett_translations');
+
 //TODO: Add select element for every product page with the cws_product_ids
 //TODO: Check if product exist with this cws product id
 //TODO: Check code for correct values from old script
