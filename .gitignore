@@ -21,3 +21,13 @@ node_modules/
 *.log
 *.sql
 *.sqlite
+
+.DS_Store
+
+._.DS_Store
+
+languages/codeswholesale_patch-de_DE-backup-202002171508010.po~
+
+*.pot~
+
+codeswholesale_patch-de_DE-backup-202002171419530.po~
