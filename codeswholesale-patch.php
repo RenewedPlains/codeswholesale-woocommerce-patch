@@ -8,7 +8,6 @@ Version: 1.0.0
 Author: Mario Freuler, Bojett.com
 License: GPL2
 */
-
 ob_start();
 
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
@@ -156,8 +155,8 @@ function check_codeswholesale_plugin()
 function add_admin_menu_patch()
 {
     add_menu_page(
-        __('Bojett.com', 'codeswholesale-patch'),
-        __('Bojett.com', 'codeswholesale-patch'),
+        __('Bojett.com', 'codeswholesale_patch'),
+        __('Bojett.com', 'codeswholesale_patch'),
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page',
@@ -166,16 +165,16 @@ function add_admin_menu_patch()
     );
     add_submenu_page(
         'cws-bojett-patch',
-        __('Importer', 'codeswholesale-patch'),
-        __('Importer', 'codeswholesale-patch'),
+        __('Importer', 'codeswholesale_patch'),
+        __('Importer', 'codeswholesale_patch'),
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page'
     );
     add_submenu_page(
         'cws-bojett-patch',
-        __('Settings', 'codeswholesale-patch'),
-        __('Settings', 'codeswholesale-patch'),
+        __('Settings', 'codeswholesale_patch'),
+        __('Settings', 'codeswholesale_patch'),
         'manage_options',
         'cws-bojett-settings',
         'bojett_settings'
@@ -366,12 +365,12 @@ function bojett_settings() {
                     <tr>
                         <th scope="row"><label for="import_worker"><?php _e('Import worker', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="import_worker" type="number" id="import_worker" aria-describedby="tagline-description" value="<?php echo $get_php_worker; ?>" class="regular-text">
-                            <p class="description" id="tagline-description">This plugin works with cronjobs. Select the number of cronjobs that will be executed by the PHP server. </p></td>
+                            <p class="description" id="tagline-description"><?php _e('This plugin works with cronjobs. Select the number of cronjobs that will be executed by the PHP server.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="import_batch_size"><?php _e('Import batch size', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="import_batch_size" type="number" id="import_batch_size" aria-describedby="tagline-description" value="<?php echo $get_batch_size; ?>" class="regular-text">
-                            <p class="description" id="tagline-description">Number of games to be imported by one running cronjob.</p></td>
+                            <p class="description" id="tagline-description"><?php _e('Number of games to be imported by one running cronjob.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     </tbody>
                 </table>
@@ -382,16 +381,16 @@ function bojett_settings() {
                         <th scope="row"><label for="description_language"><?php _e('Description language', 'codeswholesale_patch'); ?></label></th>
                         <td><select name="description_language">
                                 <?php //TODO: Add available languages from CWS ?>
-                                <option value="English"<?php if($get_description_language == 'English') { echo ' selected'; } ?>>English</option>
-                                <option value="German"<?php if($get_description_language == 'German') { echo ' selected'; } ?>>German</option>
-                                <option value="Italian"<?php if($get_description_language == 'Italian') { echo ' selected'; } ?>>Italian</option>
+                                <option value="English"<?php if($get_description_language == 'English') { echo ' selected'; } ?>><?php _e('English', 'codeswholesale_patch'); ?></option>
+                                <option value="German"<?php if($get_description_language == 'German') { echo ' selected'; } ?>><?php _e('German', 'codeswholesale_patch'); ?></option>
+                                <option value="Italian"<?php if($get_description_language == 'Italian') { echo ' selected'; } ?>><?php _e('Italian', 'codeswholesale_patch'); ?></option>
                             </select>
-                            <p class="description" id="tagline-description">Select the language for the description imported from CodesWholesale.</p></td>
+                            <p class="description" id="tagline-description"><?php _e('Select the language for the description imported from CodesWholesale.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="profit_margin_value"><?php _e('Profit margin value', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
-                            <p class="description" id="tagline-description">The product is imported in EUR. If your shop has set a different currency as the main currency, this has to be considered manually.</p></td>
+                            <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. If your shop has set a different currency as the main currency, this has to be considered manually.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     </tbody>
                 </table>
@@ -455,7 +454,7 @@ require_once ( plugin_dir_path( __FILE__ ) . "importaction.php");
 function bojett_import_struggle() {
     ?>
     <div class="error notice">
-        <p><?php _e( '<b>Uhoh!</b> It seems the importer got stuck. <a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&forcekill=true">Click here</a> to force the import to stop. <a href="https://github.com/RenewedPlains/codeswholesale-woocommerce-patch" target="_blank">Please inform me</a> about the problem if it persists.', 'codeswholesale_patch' ); ?></p>
+        <p><?php _e( '<b>Uhoh!</b> It seems the importer got stuck. <a href="admin.php?page=cws-bojett-patch&forcekill=true">Click here</a> to force the import to stop. <a href="https://github.com/RenewedPlains/codeswholesale-woocommerce-patch" target="_blank">Please inform me</a> about the problem if it persists.', 'codeswholesale_patch' ); ?></p>
     </div>
     <?php
 }
@@ -640,7 +639,7 @@ function render_custom_link_page() {
             echo '<a href="' . $_SERVER['PHP_SELF'] . '?page=cws-bojett-patch&importabort=true" class="page-title-action red-abort-import-button">' . __('Stop current import', 'codeswholesale_patch') . '</a>';
         }
         $get_importnumber = $wpdb->get_var('SELECT importnumber FROM '.$wpdb->prefix.'bojett_credentials');
-        echo '<code>' . $get_importnumber . ' products were totally imported</code>';
+        echo '<code>' . $get_importnumber . ' ' . __('products were totally imported', 'codeswholesale_patch') . '</code>';
     }
     echo '<hr class="wp-header-end">
     <div class="importer_container"></div>
