@@ -1,23 +1,11 @@
 <?php
 function inital_puller($token, $resulti) {
-    if($resulti == '') {
-        $ch = curl_init('https://api.codeswholesale.com/v2/products'); // Initialise cURL
-//$post = json_encode($post); // Encode the data array into a JSON string
-        $authorization = "Authorization: Bearer " . $token; // Prepare the authorisation token
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//curl_setopt($ch, CURLOPT_POST, 1); // Specify the request method as POST
-//curl_setopt($ch, CURLOPT_POSTFIELDS, $post); // Set the posted fields
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-        $result = curl_exec($ch); // Execute the cURL statement
-        return $result;
-    } else {
-        return $resulti;
-    }
+    $result = file_get_contents('../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt');
+    return $result;
 }
 
 if($_GET['importstart'] == 'true') {
-    set_time_limit(60);
+    set_time_limit(120);
     ini_set('memory_limit', '512M');
 // Ignoriere Abbruch durch den Benutzer und erlaube dem Skript weiterzulaufen
     /*
@@ -291,21 +279,13 @@ function inital_pull($token, $resulti) {
     $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
     $db_token = $current_access_bearer_expire;
 
-    $ch = curl_init('https://api.codeswholesale.com/v2/products'); // Initialise cURL
-    $authorization = "Authorization: Bearer ".$db_token; // Prepare the authorisation token
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json' , $authorization )); // Inject the token into the header
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-    $result = curl_exec($ch); // Execute the cURL statement
+    $result = file_get_contents('wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt');
     $result_array = json_decode($result,true);
     $products_count = count(json_decode($result,true)['items']);
 
-    curl_close($ch);
 
     global $products_count, $result;
     for ($i = $from; $i < $to; $i++) {
-
-
         $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
         $productarray = $i + 1;
         $wpdb->update(
