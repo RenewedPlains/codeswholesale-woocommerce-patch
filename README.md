@@ -29,3 +29,5 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
   * Check before import can be started if there is a connection to CodesWholesale with redirect
   * Bug fix for missing translationstring
   * Added german translation for plugin
+  * Fix for multiple uploader via cron
+ 
