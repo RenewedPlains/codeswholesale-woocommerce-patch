@@ -449,16 +449,19 @@ function bojett_import_killed() {
 function validate_importer()
 {
     global $wpdb;
-    $import_worker_last_update = $wpdb->get_results('SELECT `last_update` FROM '.$wpdb->prefix.'bojett_import_worker');
+    $import_worker_last_update = $wpdb->get_results('SELECT * FROM '.$wpdb->prefix.'bojett_import_worker');
+    $update_lapse = array();
     foreach($import_worker_last_update as $last_time) {
         if($last_time->last_update + 360 < time()) {
-
-            if($_GET['forcekill'] == 'true') {
-                $table_name = $wpdb->prefix . "bojett_import_worker";
-                $wpdb->query("TRUNCATE TABLE $table_name");
-                add_action( 'admin_notices', 'bojett_import_killed' );
-            } else {
-                add_action( 'admin_notices', 'bojett_import_struggle' );
+            array_push($update_lapse, $last_time->name);
+            if(count($import_worker_last_update) == count($update_lapse)) {
+                if($_GET['forcekill'] == 'true') {
+                    $table_name = $wpdb->prefix . "bojett_import_worker";
+                    $wpdb->query("TRUNCATE TABLE $table_name");
+                    add_action( 'admin_notices', 'bojett_import_killed' );
+                } else {
+                    add_action( 'admin_notices', 'bojett_import_struggle' );
+                }
             }
         }
     }
@@ -468,6 +471,18 @@ validate_importer();
 if($_GET['importstart'] == 'true' && $_POST['importstart']) {
     $table_name = $wpdb->prefix . "bojett_import_worker";
     $wpdb->query("TRUNCATE TABLE $table_name");
+    $token = $wpdb->get_var('SELECT cws_access_token FROM '.$wpdb->prefix.'bojett_auth_token');
+    $authorization = "Authorization: Bearer " . $token;
+    $ch = curl_init('https://api.codeswholesale.com/v2/products');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    /*$handle = fopen ('../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt', 'w') or die("Unable to open file!");
+    fwrite ($handle, $result);
+    fclose ($handle);*/
 }
 
 $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
@@ -492,7 +507,7 @@ if($get_php_worker == '1') {
             $to = $get_import_to;
             $args = array($from, $to, $import_variable);
             wp_clear_scheduled_hook( $import_variable, $args );
-            wp_schedule_single_event( $timestamp + 30, 'import_batch', $args );
+            wp_schedule_single_event( $timestamp, 'import_batch', $args );
         }
     }
     add_action( 'import_batch', 'import_cws_product', 1, 3 );
@@ -525,7 +540,7 @@ if($get_php_worker == '1') {
                 $to = $get_import_to;
                 $args = array($from, $to, $import_variable);
                 wp_clear_scheduled_hook( $import_variable, $args );
-                wp_schedule_single_event($timestamp + 30, 'import_batch_' . $i, $args);
+                wp_schedule_single_event($timestamp, 'import_batch_' . $i, $args);
             }
         };
         add_action( 'import_batch_' . $i, 'import_cws_product', 1, 3 );
