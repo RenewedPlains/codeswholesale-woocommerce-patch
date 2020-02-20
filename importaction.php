@@ -7,29 +7,6 @@ function inital_puller($token, $resulti) {
 if($_GET['importstart'] == 'true') {
     set_time_limit(120);
     ini_set('memory_limit', '512M');
-// Ignoriere Abbruch durch den Benutzer und erlaube dem Skript weiterzulaufen
-    /*
-    if(connection_aborted()){
-        echo 'die  Zeit  ist um ';
-    }
-    function shutdown()
-    {
-        global $timestamp_start;
-        // Das ist unsere Shutdown Funktion, in welcher
-        // wir noch letzte Anweisungen ausführen können
-        // bevor die Ausführung beendet wird.
-        $timestamp_end = time();
-        $seconds_to_import = $timestamp_end - $timestamp_start;
-        $minute_to_import = $seconds_to_import / 60;
-        $hours_to_import = $minute_to_import / 60;
-
-    }
-
-    register_shutdown_function('shutdown');
-    //exit();
-    */
-
-
 }
 
 function import_cws_product($from, $to, $import_variable) {
