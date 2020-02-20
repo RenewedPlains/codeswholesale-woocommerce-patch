@@ -53,7 +53,6 @@ function create_plugin_database_tables()
         $sql .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql);
     }
-
     $token = 'bojett_auth_token';
     $bojett_token_table = $table_prefix . "$token";
     if($wpdb->get_var( "show tables like '$bojett_token_table'" ) != $bojett_token_table)
@@ -66,7 +65,6 @@ function create_plugin_database_tables()
         $sql2 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql2);
     }
-
     $import = 'bojett_import';
     $bojett_import_table = $table_prefix . "$import";
     if($wpdb->get_var( "show tables like '$bojett_import_table'" ) != $bojett_import_table)
@@ -80,7 +78,6 @@ function create_plugin_database_tables()
         $sql3 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql3);
     }
-
     $worker = 'bojett_import_worker';
     $bojett_worker_table = $table_prefix . "$worker";
     if($wpdb->get_var( "show tables like '$bojett_worker_table'" ) != $bojett_worker_table)
@@ -99,18 +96,15 @@ function create_plugin_database_tables()
 }
 register_activation_hook( __FILE__, 'create_plugin_database_tables' );
 
-
-function delete_bojett_tables() {
+function delete_bojett_tables( )
+{
     global $wpdb;
     $sql = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_auth_token';
     $wpdb->query($sql);
-
     $sql2 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_credentials';
     $wpdb->query($sql2);
-
     $sql3 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import';
     $wpdb->query($sql3);
-
     $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
     $wpdb->query($sql4);
 }
@@ -119,12 +113,10 @@ register_deactivation_hook( __FILE__, 'delete_bojett_tables' );
 /*
  * Check if the original codeswholesale plugin installed and activated.
  */
-
-
 add_action( 'plugins_loaded', 'check_codeswholesale_plugin', 100 );
-function check_codeswholesale_plugin()
+function check_codeswholesale_plugin( )
 {
-    if (is_plugin_active( 'codeswholesale-for-woocommerce/codeswholesale.php' ) ) {
+    if ( is_plugin_active( 'codeswholesale-for-woocommerce/codeswholesale.php' ) ) {
         // TODO: if the codeswholesale plugin not configured, notice the administrator.
         /*add_action('init', 'conf_remember');
         function conf_remember() {
@@ -137,11 +129,10 @@ function check_codeswholesale_plugin()
         add_action( 'admin_notices', 'my_error_notice' );*/
     } else {
         deactivate_plugins( plugin_basename( __FILE__ ) );
-        unset($_GET['activate']);
-        function my_error_notice() {
+        unset( $_GET['activate'] );
+        function my_error_notice( ) {
             ?>
             <div class="error notice">
-                <?php var_dump(plugin_dir_path( 'codeswholesale-for-woocommerce' . DIRECTORY_SEPARATOR . 'codeswholesale.php' )); ?>
                 <p><?php _e( 'Plugin could not be activated. Please download the official plugin from <a href="/wp-admin/plugin-install.php?s=codeswholesale&tab=search&type=term">Codeswholesale</a> and configure it. ', 'codeswholesale_patch' ); ?></p>
             </div>
             <?php
@@ -150,15 +141,14 @@ function check_codeswholesale_plugin()
     }
 }
 
-
 /*
  * Add the plugin to the admin menu with a own page.
  */
-function add_admin_menu_patch()
+function add_admin_menu_patch( )
 {
     add_menu_page(
-        __('Bojett.com', 'codeswholesale_patch'),
-        __('Bojett.com', 'codeswholesale_patch'),
+        __( 'Bojett.com', 'codeswholesale_patch' ),
+        __( 'Bojett.com', 'codeswholesale_patch' ),
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page',
@@ -167,80 +157,80 @@ function add_admin_menu_patch()
     );
     add_submenu_page(
         'cws-bojett-patch',
-        __('Importer', 'codeswholesale_patch'),
-        __('Importer', 'codeswholesale_patch'),
+        __( 'Importer', 'codeswholesale_patch' ),
+        __( 'Importer', 'codeswholesale_patch' ),
         'manage_options',
         'cws-bojett-patch',
         'render_custom_link_page'
     );
     add_submenu_page(
         'cws-bojett-patch',
-        __('Settings', 'codeswholesale_patch'),
-        __('Settings', 'codeswholesale_patch'),
+        __( 'Settings', 'codeswholesale_patch' ),
+        __( 'Settings', 'codeswholesale_patch' ),
         'manage_options',
         'cws-bojett-settings',
         'bojett_settings'
     );
 }
-add_action('admin_menu', 'add_admin_menu_patch');
-
-add_filter('admin_menu', 'change_icon_style_start',1);
-function change_icon_style_start($template) {
-    ob_start('change_icon_style_end');
+add_action( 'admin_menu', 'add_admin_menu_patch' );
+// Change position from menu icon
+add_filter( 'admin_menu', 'change_icon_style_start', 1 );
+function change_icon_style_start( $template ) {
+    ob_start( 'change_icon_style_end' );
     return $template;
 }
-function change_icon_style_end($buffer) {
-    return str_replace('img/bojett_icon_128x128.png"','img/bojett_icon_128x128.png" style="max-width: 24px;margin-top:-3px;"', $buffer);
+function change_icon_style_end( $buffer ) {
+    return str_replace( 'img/bojett_icon_128x128.png"','img/bojett_icon_128x128.png" style="max-width: 24px;margin-top:-3px;"', $buffer );
 }
 
 /*
  * Define and run Cronjob for refreshing the bearer in time
  */
-function run_cws_cron_script() {
+function run_cws_cron_script( ) {
     global $wpdb;
     $table_name = $wpdb->prefix . "bojett_auth_token";
     $options_name = $wpdb->prefix . "bojett_credentials";
-    $access_bearer = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
-    $access_expires_in = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
-    $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
-    $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
-    $db_token = $access_bearer;
+    $access_bearer = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+    $access_expires_in = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+    $client_id = $wpdb->get_var( 'SELECT cws_client_id FROM ' . $options_name );
+    $client_secret = $wpdb->get_var( 'SELECT cws_client_secret FROM ' . $options_name );
     $db_expires_in = $access_expires_in;
-    $current_timestamp = time();
+    $current_timestamp = time( );
 
-    if ($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
-        if ($client_id == NULL || $client_secret == NULL) {
+    if( $db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL ) {
+        if( $client_id == NULL || $client_secret == NULL ) {
             // Delete current bearer because no clientkeys are set
             $table_name = $wpdb->prefix . "bojett_auth_token";
-            $wpdb->query("TRUNCATE TABLE $table_name");
+            $wpdb->query( "TRUNCATE TABLE $table_name" );
         }
         // Do nothing, the bearer is already up to date.
     } else {
         $options_name = $wpdb->prefix . "bojett_credentials";
-        $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
-        $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
-
-        $chc = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
-        curl_setopt($chc, CURLOPT_HTTPHEADER, array('Content-Type: application/json')); // Inject the token into the header
-        curl_setopt($chc, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($chc, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($chc, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-        $result = curl_exec($chc); // Execute the cURL statement
-        curl_close($chc); // Close the cURL connection*/
-        $new_bearer = json_decode($result, true)['access_token'];
-        $new_bearer_expires = json_decode($result, true)['expires_in'];
+        $client_id = $wpdb->get_var( 'SELECT cws_client_id FROM ' . $options_name );
+        $client_secret = $wpdb->get_var( 'SELECT cws_client_secret FROM ' . $options_name );
+        // Get new bearer from API credentials
+        $chc = curl_init( 'https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret );
+        curl_setopt( $chc, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json' ) );
+        curl_setopt( $chc, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $chc, CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt( $chc, CURLOPT_FOLLOWLOCATION, 1 );
+        $result = curl_exec( $chc );
+        curl_close( $chc );
+        $new_bearer = json_decode( $result, true )['access_token'];
+        $new_bearer_expires = json_decode( $result, true )['expires_in'];
         $new_db_expires_in = $current_timestamp + $new_bearer_expires;
         $table_name = $wpdb->prefix . "bojett_auth_token";
-        $wpdb->query("TRUNCATE TABLE $table_name");
-        $wpdb->insert($table_name, array(
+        $wpdb->query( "TRUNCATE TABLE $table_name" );
+        $wpdb->insert( $table_name, array(
             'cws_expires_in' => $new_db_expires_in,
             'cws_access_token' => $new_bearer
-        ));
+        ) );
     }
 }
-function check_update_bearer_token() {
+
+function check_update_bearer_token( ) {
     global $wpdb;
-    if ( ! wp_next_scheduled( 'check_update_bearer_token' ) ) {
+    if ( !wp_next_scheduled( 'check_update_bearer_token' ) ) {
         $table_name = $wpdb->prefix . "bojett_auth_token";
         $access_expires_in = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
         wp_schedule_single_event( $access_expires_in, 'check_update_bearer_token' );
