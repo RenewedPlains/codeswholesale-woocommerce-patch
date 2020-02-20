@@ -1,5 +1,5 @@
 # CodesWholesale WooCommerce Patch
-Current Version: `0.8.4`-dev
+Current Version: `0.8.5`-dev
 
 This repository requires a Wordpress Woocommerce instance with preconfigured Codeswholesale for WooCommerce plugin. The Codeswholesale patch is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 
@@ -25,6 +25,9 @@ will be developed further until a version is created which completely replaces t
 Please consider reporting bugs and possible improvements via Issue on GitHub or on the official CodesWholesale support Discord Server.
 
 ### Changelog
+#### Version 0.8.5
+  * Removed unnecessary code 
+  
 #### Version 0.8.4
   * Check before import can be started if there is a connection to CodesWholesale with redirect
   * Bug fix for missing translationstring
