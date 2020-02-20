@@ -15,11 +15,9 @@ and the check for sufficient credit at CWS is still done by the official plugin.
 will be developed further until a version is created which completely replaces the official plugin.
 
 ### Requirements
-**- Running Webserver with PHP > v7.0 and cURL**
-
-**- Completely set up Wordpress instance**
-
-**- Configured and connected CodesWholesale plugin**
+- Running Webserver with PHP > v7.0 and cURL
+- Completely set up Wordpress instance
+- Configured and connected CodesWholesale plugin
 
 ### Problems with the plugin? Bug or enhancement?
 Please consider reporting bugs and possible improvements via Issue on GitHub or on the official CodesWholesale support Discord Server.
