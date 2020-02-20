@@ -480,9 +480,9 @@ if($_GET['importstart'] == 'true' && $_POST['importstart']) {
     $result = curl_exec($ch);
     curl_close($ch);
 
-    /*$handle = fopen ('../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt', 'w') or die("Unable to open file!");
+    $handle = fopen ('../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt', 'w') or die("Unable to open file!");
     fwrite ($handle, $result);
-    fclose ($handle);*/
+    fclose ($handle);
 }
 
 $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$wpdb->prefix.'bojett_credentials');
