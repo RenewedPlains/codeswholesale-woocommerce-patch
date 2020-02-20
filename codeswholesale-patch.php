@@ -10,29 +10,39 @@ Author: Mario Freuler
 Author URI: https://www.bojett.com
 License: GPL2
 */
-ob_start();
 
+ob_start( );
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-
 require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
+
 global $wpdb;
 
-function load_bojett_translations() {
+/*
+ * Load the plugin textdomain for using the language templates
+ */
+function load_bojett_translations( )
+{
     load_plugin_textdomain( 'codeswholesale_patch', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
-add_action('init', 'load_bojett_translations');
+add_action( 'init', 'load_bojett_translations' );
 
-//TODO: Add select element for every product page with the cws_product_ids
-//TODO: Check if product exist with this cws product id
-//TODO: Check code for correct values from old script
 /*
  * Create the required tables for the plugin by activation of the plugin.
  */
-function create_plugin_database_tables()
+function create_plugin_database_tables( )
 {
+    // Kill all plugin databases
     global $table_prefix, $wpdb;
-
+    $sql = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_auth_token';
+    $wpdb->query($sql);
+    $sql2 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_credentials';
+    $wpdb->query($sql2);
+    $sql3 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import';
+    $wpdb->query($sql3);
+    $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
+    $wpdb->query($sql4);
+    // Create new plugin databases
     $credentials = 'bojett_credentials';
     $bojett_credentials_table = $table_prefix . "$credentials";
     require_once( ABSPATH . '/wp-admin/includes/upgrade.php' );
