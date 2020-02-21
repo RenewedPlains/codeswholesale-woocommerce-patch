@@ -189,7 +189,7 @@ function import_cws_product($from, $to, $import_variable) {
             global $wpdb, $import_variable;
             $image_url = $url;
             if (strstr($image_url, 'no-image')) {
-                $image_url = 'https://www.bojett.com/wp-content/uploads/2020/01/noimage.png';
+                $image_url = $wpdb->get_var('SELECT placeholder_image FROM '.$wpdb->prefix.'bojett_credentials');
             }
             $url_array = explode('/', $url);
             $image_name = $url_array[count($url_array) - 1];

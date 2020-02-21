@@ -18,6 +18,8 @@ require_once( ABSPATH . 'wp-config.php' );
 
 global $wpdb;
 
+
+
 /*
  * Load the plugin textdomain for using the language templates
  */
@@ -48,6 +50,7 @@ function create_plugin_database_tables( )
     require_once( ABSPATH . '/wp-admin/includes/upgrade.php' );
     if($wpdb->get_var( "show tables like '$bojett_credentials_table'" ) != $bojett_credentials_table)
     {
+        $placeholder_image = esc_url( plugins_url( 'img/no-image.jpg', __FILE__ ) );
         $sql = "CREATE TABLE `". $bojett_credentials_table . "` ( ";
         $sql .= "  `id`  int(11)   NOT NULL auto_increment, ";
         $sql .= "  `cws_client_id`  varchar(128)  DEFAULT NULL, ";
@@ -58,6 +61,7 @@ function create_plugin_database_tables( )
         $sql .= "  `description_language`  varchar(128)  NOT NULL DEFAULT 'English', ";
         $sql .= "  `profit_margin_value`  varchar(128)  NOT NULL DEFAULT '10', ";
         $sql .= "  `productarray_id`  varchar(128)   DEFAULT NULL, ";
+        $sql .= "  `placeholder_image`  varchar(128)  NOT NULL DEFAULT '" . $placeholder_image . "', ";
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (`id`) ";
         $sql .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
@@ -249,6 +253,12 @@ function check_update_bearer_token( ) {
 add_action( 'check_update_bearer_token', 'run_cws_cron_script' );
 check_update_bearer_token();
 
+function media_uploader_enqueue() {
+    wp_enqueue_media();
+    wp_register_script('media-uploader', plugins_url('js/bojett.js' , __FILE__ ), array('jquery'));
+    wp_enqueue_script('media-uploader');
+}
+add_action('admin_enqueue_scripts', 'media_uploader_enqueue');
 
 function bojett_settings() {
     global $table_prefix, $wpdb;
@@ -281,6 +291,11 @@ function bojett_settings() {
         } else {
             $profit_margin_value = '10';
         }
+        if($_POST['placeholder_image'] != '') {
+            $placeholder_image = $_POST['placeholder_image'];
+        } else {
+            $placeholder_image = esc_url( plugins_url( 'img/no-image.jpg', __FILE__ ) );
+        }
         $description_language = $_POST['description_language'];
         $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
         if($get_credentials_check === NULL) {
@@ -291,6 +306,7 @@ function bojett_settings() {
                 'phpworker' => $import_worker,
                 'description_language' => $description_language,
                 'profit_margin_value' => $profit_margin_value,
+                'placeholder_image' => $placeholder_image
             ));
         } else {
             $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$table_prefix.'bojett_credentials');
@@ -303,6 +319,7 @@ function bojett_settings() {
                     'phpworker' => $import_worker,
                     'description_language' => $description_language,
                     'profit_margin_value' => $profit_margin_value,
+                    'placeholder_image' => $placeholder_image
                 ),
                 array( 'id' => $get_credentials_id ),
                 array(
@@ -310,6 +327,7 @@ function bojett_settings() {
                     '%s',
                     '%d',
                     '%d',
+                    '%s',
                     '%s',
                     '%s'
                 ),
@@ -349,6 +367,9 @@ function bojett_settings() {
     $get_php_worker = $wpdb->get_var('SELECT phpworker FROM '.$table_prefix.'bojett_credentials');
     $get_description_language = $wpdb->get_var('SELECT description_language FROM '.$table_prefix.'bojett_credentials');
     $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$table_prefix.'bojett_credentials');
+    $get_place_holder = $wpdb->get_var('SELECT placeholder_image FROM '.$table_prefix.'bojett_credentials');
+
+
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">
@@ -400,6 +421,12 @@ function bojett_settings() {
                         <th scope="row"><label for="profit_margin_value"><?php _e('Profit margin value', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
                             <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. If your shop has set a different currency as the main currency, this has to be considered manually.', 'codeswholesale_patch'); ?></p></td>
+                    </tr>
+                    <tr><th scope="row"><label for="placeholder_image"><?php _e('Placeholder image', 'codeswholesale_patch'); ?></label></th>
+                        <td><input id="background_image" type="text" name="placeholder_image" value="<?php echo $get_place_holder; ?>" />
+                        <input id="upload_image_button" type="button" class="button-primary" value="<?php _e('Search in Media...', 'codeswholesale_patch'); ?>" />
+                            <p class="description" id="tagline-description"><?php _e('If the CWS API does not provide a product image for the importing product, this fallback image is used.', 'codeswholesale_patch'); ?></p></td>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
