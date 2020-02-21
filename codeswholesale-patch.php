@@ -5,7 +5,7 @@ Plugin URI: https://github.com/RenewedPlains/codeswholesale-woocommerce-patch
 Description: Bojett.com Codeswholesale Plus is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 Text Domain: codeswholesale_patch
 Depends: WooCommerce
-Version: 0.8.5
+Version: 0.8.6
 Author: Mario Freuler
 Author URI: https://www.bojett.com
 License: GPL2
