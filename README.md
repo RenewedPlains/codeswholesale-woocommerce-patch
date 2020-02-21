@@ -24,7 +24,7 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
 
 ### Changelog
 #### Version 0.8.5
-  
+  * Setting Placeholder image for products without specified product image possible in the settings
   * Removed unnecessary code 
   * Importer update for lesser download from CWS API
   * Hotfix for the importer, could not change files [#02f248b](https://github.com/RenewedPlains/codeswholesale-woocommerce-patch/commit/c6e3cee434dd57b8dd9309ae352c368a3342d55a)
