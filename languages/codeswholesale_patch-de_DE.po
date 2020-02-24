@@ -2,10 +2,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bojett Codeswholesale Patch\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-02-17 15:37+0000\n"
-"PO-Revision-Date: 2020-02-17 15:38+0000\n"
+"POT-Creation-Date: 2020-02-24 15:37+0000\n"
+"PO-Revision-Date: 2020-02-24 15:42+0000\n"
 "Last-Translator: bojett <renewedplains@gmail.com>\n"
-"Language-Team: Deutsch\n"
+"Language-Team: German\n"
 "Language: de_DE\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
@@ -14,7 +14,7 @@ msgstr ""
 "X-Generator: Loco https://localise.biz/\n"
 "X-Loco-Version: 2.3.1; wp-5.3.2"
 
-#: codeswholesale-patch.php:143
+#: codeswholesale-patch.php:195
 msgid ""
 "Plugin could not be activated. Please download the official plugin from <a "
 "href=\"/wp-admin/plugin-install.php?s=codeswholesale&tab=search&type=term\">"
@@ -25,40 +25,40 @@ msgstr ""
 "s=codeswholesale&tab=search&type=term\">Codeswholesale</a> und konfigurieren "
 "Sie es. "
 
-#: codeswholesale-patch.php:158 codeswholesale-patch.php:159
+#: codeswholesale-patch.php:209 codeswholesale-patch.php:210
 msgid "Bojett.com"
 msgstr ""
 
-#: codeswholesale-patch.php:168 codeswholesale-patch.php:169
+#: codeswholesale-patch.php:219 codeswholesale-patch.php:220
 msgid "Importer"
 msgstr ""
 
-#: codeswholesale-patch.php:176 codeswholesale-patch.php:177
-#: codeswholesale-patch.php:357
+#: codeswholesale-patch.php:227 codeswholesale-patch.php:228
+#: codeswholesale-patch.php:483
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: codeswholesale-patch.php:261
+#: codeswholesale-patch.php:395
 msgid ""
 "First connect to Codeswholesale so that you can start importing products."
 msgstr ""
 "Verbinden Sie sich zuerst mit Codeswholesale, damit Sie den Produkteimport "
 "starten können."
 
-#: codeswholesale-patch.php:329
+#: codeswholesale-patch.php:451
 msgid "Your settings have been successfully saved."
 msgstr "Ihre Einstellungen wurden erfolgreich gespeichert."
 
-#: codeswholesale-patch.php:339
+#: codeswholesale-patch.php:461
 msgid "Connection to CodesWholesale failed. Check your input."
 msgstr ""
 "Verbindung zu CodesWholesale fehlgeschlagen. Überprüfen Sie Ihre Eingabe."
 
-#: codeswholesale-patch.php:358
+#: codeswholesale-patch.php:484
 msgid "Get your API Keys"
 msgstr "Holen Sie sich Ihre API-Schlüssel"
 
-#: codeswholesale-patch.php:359
+#: codeswholesale-patch.php:485
 msgid ""
 "To enable us to import all products, you need an available account at <a "
 "href=\"https://codeswholesale.com\" target=\"_blank\">CodesWholesale.com</a>."
@@ -75,23 +75,23 @@ msgstr ""
 "generiert, so dass Ihr Server eine ausgehende Verbindung garantieren und "
 "alle verfügbaren Produkte importieren kann."
 
-#: codeswholesale-patch.php:364
+#: codeswholesale-patch.php:490
 msgid "Your CWS API Client ID"
 msgstr "Ihre CWS Client ID"
 
-#: codeswholesale-patch.php:368
+#: codeswholesale-patch.php:494
 msgid "Your CWS API Secret ID"
 msgstr "Ihre CWS Secret ID"
 
-#: codeswholesale-patch.php:373
+#: codeswholesale-patch.php:499
 msgid "Import settings"
 msgstr "Import-Einstellungen"
 
-#: codeswholesale-patch.php:377
+#: codeswholesale-patch.php:503
 msgid "Import worker"
 msgstr "Import-Worker"
 
-#: codeswholesale-patch.php:379
+#: codeswholesale-patch.php:505
 msgid ""
 "This plugin works with cronjobs. Select the number of cronjobs that will be "
 "executed by the PHP server."
@@ -99,61 +99,110 @@ msgstr ""
 "Dieses Plugin arbeitet mit Cronjobs. Wählen Sie die Anzahl der Cronjobs aus, "
 "die vom PHP-Server ausgeführt werden sollen."
 
-#: codeswholesale-patch.php:382
+#: codeswholesale-patch.php:508
 msgid "Import batch size"
 msgstr "Anzahl Spiele pro Batch"
 
-#: codeswholesale-patch.php:384
+#: codeswholesale-patch.php:510
 msgid "Number of games to be imported by one running cronjob."
 msgstr ""
 "Anzahl der Spiele, die von einem laufenden Cronjob importiert werden sollen."
 
-#: codeswholesale-patch.php:388
+#: codeswholesale-patch.php:514
 msgid "Product settings"
 msgstr "Produkt-Einstellungen"
 
-#: codeswholesale-patch.php:392
+#: codeswholesale-patch.php:518
 msgid "Description language"
 msgstr "Beschreibungs-Sprache"
 
-#: codeswholesale-patch.php:395
+#: codeswholesale-patch.php:521
 msgid "English"
 msgstr "Englisch"
 
-#: codeswholesale-patch.php:396
+#: codeswholesale-patch.php:522
 msgid "German"
 msgstr "Deutsch"
 
-#: codeswholesale-patch.php:397
+#: codeswholesale-patch.php:523
 msgid "Italian"
 msgstr "Italienisch"
 
-#: codeswholesale-patch.php:399
+#: codeswholesale-patch.php:525
 msgid "Select the language for the description imported from CodesWholesale."
 msgstr ""
 "Wählen Sie die Sprache für die aus CodesWholesale importierte Beschreibung."
 
-#: codeswholesale-patch.php:402
+#: codeswholesale-patch.php:528
+msgid "Main currency"
+msgstr "Hauptwährung"
+
+#: codeswholesale-patch.php:540
+msgid ""
+"CodesWholesale supplies prices in EUR. Choose your shop currency here to "
+"convert the prices automatically on a product update and new imports."
+msgstr ""
+"CodesWholesale liefert Preise in EUR. Wählen Sie hier Ihre Shop-Währung, um "
+"die Preise bei Produktaktualisierungen und Neuimports automatisch "
+"umzurechnen."
+
+#: codeswholesale-patch.php:543
+msgid "Automatic product updates"
+msgstr "Automatischer Produktimport"
+
+#: codeswholesale-patch.php:546
+msgid "Inactive"
+msgstr "Inaktiv"
+
+#: codeswholesale-patch.php:547
+msgid "Active"
+msgstr "Aktiv"
+
+#: codeswholesale-patch.php:550
+msgid ""
+"Through the specified Postback URL at Codeswholesale.com, price and stock "
+"updates are transmitted individually. <br />Your Postback URL: "
+msgstr ""
+"Über die angegebene Postback-URL bei Codeswholesale.com werden Preis- und "
+"Bestandsaktualisierungen einzeln übermittelt. <br />Ihre Postback-URL: "
+
+#: codeswholesale-patch.php:554
 msgid "Profit margin value"
 msgstr "Gewinnmarge"
 
-#: codeswholesale-patch.php:404
+#: codeswholesale-patch.php:556
 msgid ""
-"The product is imported in EUR. If your shop has set a different currency as "
-"the main currency, this has to be considered manually."
+"The product is imported in EUR. Indicate how much profit you want to make in "
+"your shop currency per purchase."
 msgstr ""
-"Die Produkte werden in EUR importiert. Wenn Ihr Shop eine andere Währung als "
-"Hauptwährung festgelegt hat, muss dies manuell berücksichtigt werden."
+"Das Produkt wird in EUR importiert. Geben Sie an, wie viel Gewinn Sie in "
+"Ihrer Shop-Währung pro Kauf erzielen möchten."
 
-#: codeswholesale-patch.php:408
+#: codeswholesale-patch.php:558
+msgid "Placeholder image"
+msgstr "Platzhalter Bild"
+
+#: codeswholesale-patch.php:560
+msgid "Search in Media..."
+msgstr "Suche in Mediathek..."
+
+#: codeswholesale-patch.php:561
+msgid ""
+"If the CWS API does not provide a product image for the importing product, "
+"this fallback image is used."
+msgstr ""
+"Wenn die CWS-API kein Produktbild für das importierende Produkt bereitstellt,"
+" wird dieses Fallback-Bild verwendet."
+
+#: codeswholesale-patch.php:566
 msgid "Save Changes"
 msgstr "Änderungen speichern"
 
-#: codeswholesale-patch.php:457
+#: codeswholesale-patch.php:586
 msgid "Every 30 seconds"
 msgstr "Alle 30 Sekunden"
 
-#: codeswholesale-patch.php:468
+#: codeswholesale-patch.php:597
 msgid ""
 "<b>Uhoh!</b> It seems the importer got stuck. <a href=\"admin.php?page=cws-"
 "bojett-patch&forcekill=true\">Click here</a> to force the import to stop. <a "
@@ -166,7 +215,7 @@ msgstr ""
 "com/RenewedPlains/codeswholesale-woocommerce-patch\" target=\"_blank\">Bitte "
 "informieren Sie mich</a> über das Problem, falls es weiterhin besteht."
 
-#: codeswholesale-patch.php:475
+#: codeswholesale-patch.php:604
 msgid ""
 "The importer was interrupted and removed. Please try the import again again. "
 "<a href=\"https://github.com/RenewedPlains/codeswholesale-woocommerce-"
@@ -178,7 +227,7 @@ msgstr ""
 "com/RenewedPlains/codeswholesale-woocommerce-patch\" target=\"_blank\">Bitte "
 "informieren Sie mich</a> über das Problem, falls es weiterhin besteht."
 
-#: codeswholesale-patch.php:621
+#: codeswholesale-patch.php:765
 msgid ""
 "Import started successfully. The import will also continue when you leave "
 "the page. Come back here to see the status of the import."
@@ -187,35 +236,44 @@ msgstr ""
 "Seite verlassen. Kommen Sie hierher zurück, um den Status des Imports zu "
 "überprüfen."
 
-#: codeswholesale-patch.php:648
+#: codeswholesale-patch.php:792
 msgid "Product Import"
 msgstr "Produkt Import"
 
-#: codeswholesale-patch.php:651
+#: codeswholesale-patch.php:795
 msgid "Start new import"
 msgstr "Neuer Import starten"
 
-#: codeswholesale-patch.php:656
+#: codeswholesale-patch.php:800
 msgid "Stop current import"
 msgstr "Laufender Import stoppen"
 
-#: codeswholesale-patch.php:659
+#: codeswholesale-patch.php:803
 msgid "products were totally imported"
 msgstr "Produkte können importiert werden"
 
 #. Name of the plugin
-msgid "Bojett Codeswholesale Patch"
+msgid "Bojett.com Codeswholesale Plus"
 msgstr ""
 
 #. Description of the plugin
 msgid ""
-"Currently the codeswholesale importer for WooCommerce is not working. This "
-"patch provides a new importer to import all products from CWS."
+"Bojett.com Codeswholesale Plus is installed as an additional plugin, which "
+"retrieves the access data from the Codeswholesale for WooCommerce Plugin API "
+"and starts a new import process via the V2 API of Codeswholesale."
 msgstr ""
-"Derzeit funktioniert der CodesWholesale Import für WooCommerce nicht. Dieser "
-"Patch bietet ein neues Importer-Script, geschrieben in PHP, der alle "
-"Produkte von CWS importieren kann via Cron."
+"Bojett.com Codeswholesale Plus wird als zusätzliches Plugin installiert, das "
+"die Zugangsdaten von der Codeswholesale for WooCommerce Plugin API abruft "
+"und einen neuen Importprozess über die V2 API von Codeswholesale startet."
+
+#. URI of the plugin
+msgid "https://github.com/RenewedPlains/codeswholesale-woocommerce-patch"
+msgstr ""
 
 #. Author of the plugin
-msgid "Mario Freuler, Bojett.com"
+msgid "Mario Freuler"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://www.bojett.com"
 msgstr ""
