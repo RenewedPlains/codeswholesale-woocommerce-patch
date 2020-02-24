@@ -418,6 +418,16 @@ function bojett_settings() {
                             <p class="description" id="tagline-description"><?php _e('Select the language for the description imported from CodesWholesale.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     <tr>
+                        <th scope="row"><label for="automatic_product_updates"><?php _e('Automatic product updates', 'codeswholesale_patch'); ?></label></th>
+                        <td>
+                            <select name="automatic_product_update">
+                                <option value="0"<?php if($get_description_language == 'English') { echo ' selected'; } ?>><?php _e('Inactive', 'codeswholesale_patch'); ?></option>
+                                <option value="1"<?php if($get_description_language == 'German') { echo ' selected'; } ?>><?php _e('Active', 'codeswholesale_patch'); ?></option>
+                            </select>
+                            <p class="description" id="tagline-description"><?php _e('Through the specified Postback URL at Codeswholesale.com, price and stock updates are transmitted individually. <br />Your Postback URL: http://blabl', 'codeswholesale_patch'); ?></p></td>
+                        </td>
+                    </tr>
+                    <tr>
                         <th scope="row"><label for="profit_margin_value"><?php _e('Profit margin value', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
                             <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. If your shop has set a different currency as the main currency, this has to be considered manually.', 'codeswholesale_patch'); ?></p></td>
