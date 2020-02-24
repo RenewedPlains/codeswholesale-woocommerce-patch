@@ -1,5 +1,5 @@
 # CodesWholesale WooCommerce Patch
-Current Version: `0.8.6`-dev
+Current Version: `0.9.0`-dev
 
 This repository requires a Wordpress Woocommerce instance with preconfigured Codeswholesale for WooCommerce plugin. The Codeswholesale patch is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 
@@ -23,8 +23,12 @@ will be developed further until a version is created which completely replaces t
 Please consider reporting bugs and possible improvements via Issue on GitHub or on the official CodesWholesale support Discord Server.
 
 ### Changelog
-#### Version 0.8.6
-  * .
+#### Version 0.9.0
+  * Placeholders inserted in setting fields for easier decision
+  * Currency converter in 32 different currencies added
+    * Is regenerated via cronjob every hour
+  * Simplified product update procedure added
+    * As soon as the Postback URL is triggered by CWS, the data of the product to be updated is read and updated
 
 #### Version 0.8.5
   * Setting Placeholder image for products without specified product image possible in the settings
