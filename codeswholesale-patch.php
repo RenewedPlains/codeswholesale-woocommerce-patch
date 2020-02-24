@@ -44,6 +44,8 @@ function create_plugin_database_tables( )
     $wpdb->query($sql3);
     $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
     $wpdb->query($sql4);
+    $sql5 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_currency_rates';
+    $wpdb->query($sql5);
     // Create new plugin databases
     $credentials = 'bojett_credentials';
     $bojett_credentials_table = $table_prefix . "$credentials";
@@ -58,8 +60,10 @@ function create_plugin_database_tables( )
         $sql .= "  `batch_size`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `phpworker`  varchar(128)  NOT NULL DEFAULT '5', ";
         $sql .= "  `importnumber`  varchar(128)  NOT NULL DEFAULT '20', ";
+        $sql .= "  `auto_updates`  varchar(128)  NOT NULL DEFAULT '0', ";
         $sql .= "  `description_language`  varchar(128)  NOT NULL DEFAULT 'English', ";
         $sql .= "  `profit_margin_value`  varchar(128)  NOT NULL DEFAULT '10', ";
+        $sql .= "  `product_currency`  varchar(128)  NOT NULL DEFAULT 'EUR', ";
         $sql .= "  `productarray_id`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `placeholder_image`  varchar(128)  NOT NULL DEFAULT '" . $placeholder_image . "', ";
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
@@ -107,6 +111,45 @@ function create_plugin_database_tables( )
         $sql4 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql4);
     }
+
+    $currency_rates = 'bojett_currency_rates';
+    $bojett_currency_rates_table = $table_prefix . "$currency_rates";
+    if($wpdb->get_var( "show tables like '$bojett_currency_rates_table'" ) != $bojett_currency_rates_table)
+    {
+        $sql5 = "CREATE TABLE `". $bojett_currency_rates_table . "` ( ";
+        $sql5 .= "  `id`  int(11)   NOT NULL auto_increment, ";
+        $sql5 .= "  `name`  varchar(128)   NOT NULL, ";
+        $sql5 .= "  `value`  varchar(128)   NOT NULL, ";
+        $sql5 .= "  `selected`  varchar(128)  NOT NULL DEFAULT '0', ";
+        $sql5 .= "  `last_update`  varchar(128)   NOT NULL, ";
+        $sql5 .= "  PRIMARY KEY (`id`) ";
+        $sql5 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        dbDelta($sql5);
+    }
+
+    $wpdb->query( "TRUNCATE TABLE " .$wpdb->prefix . "bojett_currency_rates" );
+    $chc = curl_init( 'https://api.exchangeratesapi.io/latest?base=EUR' );
+    curl_setopt( $chc, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json' ) );
+    curl_setopt( $chc, CURLOPT_RETURNTRANSFER, true );
+    curl_setopt( $chc, CURLOPT_SSL_VERIFYPEER, false );
+    curl_setopt( $chc, CURLOPT_FOLLOWLOCATION, 1 );
+    $result = curl_exec( $chc );
+    curl_close( $chc );
+    $exchange_rates_eur = json_decode( $result, true )['rates'];
+    $current_timestamp = time();
+    $wpdb->insert( $bojett_currency_rates_table, array(
+        'name' => 'EUR',
+        'value' => '1',
+        'last_update' => $current_timestamp
+    ) );
+    foreach($exchange_rates_eur as $currency_name => $currency_rate) {
+        $current_timestamp = time();
+        $wpdb->insert( $bojett_currency_rates_table, array(
+            'name' => $currency_name,
+            'value' => $currency_rate,
+            'last_update' => $current_timestamp
+        ) );
+    }
 }
 register_activation_hook( __FILE__, 'create_plugin_database_tables' );
 
@@ -121,6 +164,8 @@ function delete_bojett_tables( )
     $wpdb->query($sql3);
     $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
     $wpdb->query($sql4);
+    $sql5 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_currency_rates';
+    $wpdb->query($sql5);
 }
 register_deactivation_hook( __FILE__, 'delete_bojett_tables' );
 
@@ -253,12 +298,93 @@ function check_update_bearer_token( ) {
 add_action( 'check_update_bearer_token', 'run_cws_cron_script' );
 check_update_bearer_token();
 
+function pull_currencies() {
+    global $wpdb;
+    $currency_rates = 'bojett_currency_rates';
+    $bojett_currency_rates_table = $wpdb->prefix . "$currency_rates";
+    $wpdb->query( "TRUNCATE TABLE " .$wpdb->prefix . "bojett_currency_rates" );
+    $chc = curl_init( 'https://api.exchangeratesapi.io/latest?base=EUR' );
+    curl_setopt( $chc, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json' ) );
+    curl_setopt( $chc, CURLOPT_RETURNTRANSFER, true );
+    curl_setopt( $chc, CURLOPT_SSL_VERIFYPEER, false );
+    curl_setopt( $chc, CURLOPT_FOLLOWLOCATION, 1 );
+    $result = curl_exec( $chc );
+    curl_close( $chc );
+    $exchange_rates_eur = json_decode( $result, true )['rates'];
+    $current_timestamp = time();
+    $wpdb->insert( $bojett_currency_rates_table, array(
+        'name' => 'EUR',
+        'value' => '1',
+        'last_update' => $current_timestamp
+    ) );
+    foreach($exchange_rates_eur as $currency_name => $currency_rate) {
+        $current_timestamp = time();
+        $wpdb->insert( $bojett_currency_rates_table, array(
+            'name' => $currency_name,
+            'value' => $currency_rate,
+            'last_update' => $current_timestamp
+        ) );
+    }
+}
+
+function check_cws_currencies( ) {
+    global $wpdb;
+    if ( !wp_next_scheduled( 'check_cws_currencies' ) ) {
+        $timestamp = time();
+        wp_schedule_single_event( $timestamp + 3600, 'check_cws_currencies' );
+    }
+}
+add_action( 'check_cws_currencies', 'pull_currencies' );
+check_cws_currencies();
+
 function media_uploader_enqueue() {
     wp_enqueue_media();
     wp_register_script('media-uploader', plugins_url('js/bojett.js' , __FILE__ ), array('jquery'));
     wp_enqueue_script('media-uploader');
 }
 add_action('admin_enqueue_scripts', 'media_uploader_enqueue');
+
+if( !function_exists( 'get_wc_products_where_custom_field_is_set' ) )
+{
+    function get_wc_products_where_custom_field_is_set( $field, $value )
+    {
+        $products = wc_get_products(array('status' => 'publish',
+            'meta_key' => $field,
+            'meta_value' => $value, //'meta_value' => array('yes'),
+            'meta_compare' => 'IN')); //'meta_compare' => 'NOT IN'));
+        foreach ($products as $product) {
+            $existing_pid = $product->get_id();
+            return array(count($products), $existing_pid);
+        }
+    }
+}
+$auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
+if($auto_updates == '1') {
+    function check_product_updates( )
+    {
+        global $wpdb;
+        $filecontent = file_get_contents( 'php://input' );
+        $decode_content = json_decode($filecontent);
+        $updated_productid = $decode_content->products[0]->productId;
+        $updated_productprice = $decode_content->products[0]->prices[1]->price;
+        $updated_productstock = $decode_content->products[0]->quantity;
+        $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $updated_productid);
+        if($existcheck[0] >= 1 ) {
+            $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
+            $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $setprice = ($updated_productprice * $get_currency_value) + $profit_margin_value;
+            update_post_meta($existcheck[1], '_regular_price', $setprice);
+            update_post_meta($existcheck[1], '_price', $setprice);
+            update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $updated_productprice);
+            wc_update_product_stock($existcheck[1], $updated_productstock, 'set');
+            //error_log('1 ' . $existcheck[1] . " - updated \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+        } else {
+            //error_log('1 ' . $existcheck[1] . " - Produkt wurde nicht gefunden, somit wurde kein Update angewendet \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+        }
+    }
+    add_action('admin_post_nopriv_codeswholesale_notifications', 'check_product_updates');
+}
 
 function bojett_settings() {
     global $table_prefix, $wpdb;
@@ -276,6 +402,8 @@ function bojett_settings() {
     if($_POST['set_settings']) {
         $cws_client_id = $_POST['cws_client_id'];
         $cws_secret_id = $_POST['cws_secret_id'];
+        $auto_updates = $_POST['auto_updates'];
+        $main_currency = $_POST['main_currency'];
         if($_POST['import_worker'] != '') {
             $import_worker = $_POST['import_worker'];
         } else {
@@ -297,43 +425,21 @@ function bojett_settings() {
             $placeholder_image = esc_url( plugins_url( 'img/no-image.jpg', __FILE__ ) );
         }
         $description_language = $_POST['description_language'];
-        $get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
-        if($get_credentials_check === NULL) {
-            $wpdb->insert($table_prefix.'bojett_credentials', array(
-                'cws_client_id' => $cws_client_id,
-                'cws_client_secret' => $cws_secret_id,
-                'batch_size' => $import_batch_size,
-                'phpworker' => $import_worker,
-                'description_language' => $description_language,
-                'profit_margin_value' => $profit_margin_value,
-                'placeholder_image' => $placeholder_image
-            ));
-        } else {
-            $get_credentials_id = $wpdb->get_var('SELECT id FROM '.$table_prefix.'bojett_credentials');
-            $wpdb->update(
-                $table_prefix.'bojett_credentials',
-                array(
-                    'cws_client_id' => $cws_client_id,
-                    'cws_client_secret' => $cws_secret_id,
-                    'batch_size' => $import_batch_size,
-                    'phpworker' => $import_worker,
-                    'description_language' => $description_language,
-                    'profit_margin_value' => $profit_margin_value,
-                    'placeholder_image' => $placeholder_image
-                ),
-                array( 'id' => $get_credentials_id ),
-                array(
-                    '%s',
-                    '%s',
-                    '%d',
-                    '%d',
-                    '%s',
-                    '%s',
-                    '%s'
-                ),
-                array( '%s' )
-            );
-        }
+        //$get_credentials_check = $wpdb->get_var('SELECT cws_client_id, cws_client_secret FROM '.$table_prefix.'bojett_credentials');
+        $wpdb->query("TRUNCATE TABLE " . $wpdb->prefix . "bojett_credentials");
+
+        $wpdb->insert($table_prefix . 'bojett_credentials', array(
+            'cws_client_id' => $cws_client_id,
+            'cws_client_secret' => $cws_secret_id,
+            'batch_size' => $import_batch_size,
+            'phpworker' => $import_worker,
+            'description_language' => $description_language,
+            'auto_updates' => $auto_updates,
+            'profit_margin_value' => $profit_margin_value,
+            'product_currency' => $main_currency,
+            'placeholder_image' => $placeholder_image
+        ));
+
         require_once('includes/bearer-refresh.php');
         $table_name = $wpdb->prefix . "bojett_auth_token";
         $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
@@ -368,7 +474,8 @@ function bojett_settings() {
     $get_description_language = $wpdb->get_var('SELECT description_language FROM '.$table_prefix.'bojett_credentials');
     $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$table_prefix.'bojett_credentials');
     $get_place_holder = $wpdb->get_var('SELECT placeholder_image FROM '.$table_prefix.'bojett_credentials');
-
+    $get_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
+    $auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
 
     ?>
     <div class="wrap">
@@ -394,12 +501,12 @@ function bojett_settings() {
                     <tbody>
                     <tr>
                         <th scope="row"><label for="import_worker"><?php _e('Import worker', 'codeswholesale_patch'); ?></label></th>
-                        <td><input name="import_worker" type="number" id="import_worker" aria-describedby="tagline-description" value="<?php echo $get_php_worker; ?>" class="regular-text">
+                        <td><input name="import_worker" type="number" placeholder="1-10" min="1" max="10" id="import_worker" aria-describedby="tagline-description" value="<?php echo $get_php_worker; ?>" class="regular-text">
                             <p class="description" id="tagline-description"><?php _e('This plugin works with cronjobs. Select the number of cronjobs that will be executed by the PHP server.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="import_batch_size"><?php _e('Import batch size', 'codeswholesale_patch'); ?></label></th>
-                        <td><input name="import_batch_size" type="number" id="import_batch_size" aria-describedby="tagline-description" value="<?php echo $get_batch_size; ?>" class="regular-text">
+                        <td><input name="import_batch_size" type="number"  placeholder="1-100" min="1" max="100" id="import_batch_size" aria-describedby="tagline-description" value="<?php echo $get_batch_size; ?>" class="regular-text">
                             <p class="description" id="tagline-description"><?php _e('Number of games to be imported by one running cronjob.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     </tbody>
@@ -418,19 +525,35 @@ function bojett_settings() {
                             <p class="description" id="tagline-description"><?php _e('Select the language for the description imported from CodesWholesale.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     <tr>
+                        <th scope="row"><label for="main_currency"><?php _e('Main currency', 'codeswholesale_patch'); ?></label></th>
+                        <td>
+                        <select name="main_currency">
+                                <?php
+                                    $get_all_currencies = $wpdb->get_results('SELECT * FROM '.$wpdb->prefix.'bojett_currency_rates');
+                                    foreach($get_all_currencies as $single_currency) {
+                                        echo '<option';
+                                        if($get_currency == $single_currency->name) { echo ' selected'; }
+                                        echo ' value="' . $single_currency->name . '">' . $single_currency->value . ' ' . $single_currency->name . '</option>';
+                                    }
+                                ?>
+                                </select><span> = 1 EUR</span>
+                            <p class="description" id="tagline-description"><?php _e('CodesWholesale supplies prices in EUR. Choose your shop currency here to convert the prices automatically on a product update and new imports.', 'codeswholesale_patch'); ?></p></td>
+                    </tr>
+                    <tr>
                         <th scope="row"><label for="automatic_product_updates"><?php _e('Automatic product updates', 'codeswholesale_patch'); ?></label></th>
                         <td>
-                            <select name="automatic_product_update">
-                                <option value="0"<?php if($get_description_language == 'English') { echo ' selected'; } ?>><?php _e('Inactive', 'codeswholesale_patch'); ?></option>
-                                <option value="1"<?php if($get_description_language == 'German') { echo ' selected'; } ?>><?php _e('Active', 'codeswholesale_patch'); ?></option>
+                            <select name="auto_updates">
+                                <option value="0"<?php if($auto_updates == '0') { echo ' selected'; } ?>><?php _e('Inactive', 'codeswholesale_patch'); ?></option>
+                                <option value="1"<?php if($auto_updates == '1') { echo ' selected'; } ?>><?php _e('Active', 'codeswholesale_patch'); ?></option>
                             </select>
-                            <p class="description" id="tagline-description"><?php _e('Through the specified Postback URL at Codeswholesale.com, price and stock updates are transmitted individually. <br />Your Postback URL: http://blabl', 'codeswholesale_patch'); ?></p></td>
+                            <?php $postback_url = get_site_url() . '/wp-admin/admin-post.php?action=codeswholesale_notifications'; ?>
+                            <p class="description" id="tagline-description"><?php _e('Through the specified Postback URL at Codeswholesale.com, price and stock updates are transmitted individually. <br />Your Postback URL: ', 'codeswholesale_patch'); echo $postback_url; ?></p></td>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="profit_margin_value"><?php _e('Profit margin value', 'codeswholesale_patch'); ?></label></th>
                         <td><input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
-                            <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. If your shop has set a different currency as the main currency, this has to be considered manually.', 'codeswholesale_patch'); ?></p></td>
+                            <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. Indicate how much profit you want to make in your shop currency per purchase.', 'codeswholesale_patch'); ?></p></td>
                     </tr>
                     <tr><th scope="row"><label for="placeholder_image"><?php _e('Placeholder image', 'codeswholesale_patch'); ?></label></th>
                         <td><input id="background_image" type="text" name="placeholder_image" value="<?php echo $get_place_holder; ?>" />

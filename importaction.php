@@ -366,8 +366,10 @@ function import_cws_product($from, $to, $import_variable) {
     $cws_quantity = json_decode($result, true)['items'][$i]['quantity'];
     $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $cws_productid);
     if($existcheck[0] >= 1 ) {
+        $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
+        $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
         $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
-        $setprice = $cws_productprice + $profit_margin_value;
+        $setprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
         update_post_meta($existcheck[1], '_regular_price', $setprice);
         update_post_meta($existcheck[1], '_price', $setprice);
         update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
@@ -465,9 +467,11 @@ function import_cws_product($from, $to, $import_variable) {
         'post_status' => 'publish',
         'post_type' => "product",
     );
+    $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
+    $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
     $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
     $post_id = wp_insert_post($post_pro);
-    $realprice = $cws_productprice + $profit_margin_value;
+    $realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
     wp_set_object_terms($post_id, 'simple', 'product_type');
     update_post_meta($post_id, '_visibility', 'visible');
     update_post_meta($post_id, '_stock_status', 'instock');
