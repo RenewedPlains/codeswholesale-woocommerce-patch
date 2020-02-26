@@ -657,7 +657,7 @@ if($_GET['importstart'] == 'true' && $_POST['importstart']) {
     $result = curl_exec($ch);
     curl_close($ch);
 
-    $handle = fopen ('../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt', 'w') or die("Unable to open file!");
+    $handle = fopen (plugin_dir_path( __FILE__ ) . '/includes/current_import.txt', 'w') or die("Unable to open file!");
     fwrite ($handle, $result);
     fclose ($handle);
 }
