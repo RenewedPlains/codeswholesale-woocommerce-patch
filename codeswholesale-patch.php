@@ -403,6 +403,7 @@ function bojett_settings() {
         $cws_secret_id = $_POST['cws_secret_id'];
         $auto_updates = $_POST['auto_updates'];
         $main_currency = $_POST['main_currency'];
+        $profit_margin = $_POST['margin'];
         if($_POST['import_worker'] != '') {
             $import_worker = $_POST['import_worker'];
         } else {
@@ -414,9 +415,9 @@ function bojett_settings() {
             $import_batch_size = '20';
         }
         if($_POST['profit_margin_value'] != '') {
-            $profit_margin_value = $_POST['profit_margin_value'];
+            $profit_margin_value = $_POST['profit_margin_value'] . $profit_margin;
         } else {
-            $profit_margin_value = '10';
+            $profit_margin_value = '10' . $profit_margin;
         }
         if($_POST['placeholder_image'] != '') {
             $placeholder_image = $_POST['placeholder_image'];
@@ -475,7 +476,15 @@ function bojett_settings() {
     $get_place_holder = $wpdb->get_var('SELECT placeholder_image FROM '.$table_prefix.'bojett_credentials');
     $get_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
     $auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
+    if(substr($profit_margin_value, -1, 1) == 'a') {
+        $margin = 'a';
+    } else if(substr($profit_margin_value, -1, 1) == 'p') {
+        $margin = 'p';
+    } else {
+        $margin = 'a';
+    }
 
+    $profit_margin_value = substr($profit_margin_value, 0, -1);
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">
@@ -532,7 +541,7 @@ function bojett_settings() {
                                     foreach($get_all_currencies as $single_currency) {
                                         echo '<option';
                                         if($get_currency == $single_currency->name) { echo ' selected'; }
-                                        echo ' value="' . $single_currency->name . '">' . $single_currency->value . ' ' . $single_currency->name . '</option>';
+                                        echo ' value="' . $single_currency->name . '">' . $single_currency->name . ' -- ' . $single_currency->value . ' ' . $single_currency->name . '</option>';
                                     }
                                 ?>
                                 </select><span> = 1 EUR</span>
@@ -550,12 +559,21 @@ function bojett_settings() {
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><label for="profit_margin_value"><?php _e('Profit margin value', 'codeswholesale_patch'); ?></label></th>
-                        <td><input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
-                            <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. Indicate how much profit you want to make in your shop currency per purchase.', 'codeswholesale_patch'); ?></p></td>
+                        <th scope="row"><label for="profit_margin_value"><?php _e( 'Profit margin value', 'codeswholesale_patch' ); ?></label></th>
+                        <td>
+                            <div class="margin_switch" style="margin-top: 8px;">
+                                <input type="radio" <?php if($margin == 'a') { echo 'checked '; } else if($margin != 'p' && $margin != 'a') { echo 'checked '; } ?>name="margin" value="a" id="margin_amount" style="margin-top: 0px;" /><label style="margin-right: 25px;" for="margin_amount"><?php _e( 'Amount', 'codeswholesale_patch' ); ?></label>
+                                <input type="radio" <?php if($margin == 'p') { echo 'checked '; } ?>name="margin" value="p" id="margin_percentage" style="margin-top: 0px;" /><label for="margin_percentage"><?php _e( 'Percentage', 'codeswholesale_patch' ); ?></label>
+                            </div>
+                            <br /><br />
+                            <?php $get_currency_value = $wpdb->get_var('SELECT `product_currency` FROM ' . $wpdb->prefix . 'bojett_credentials'); ?>
+                            <input name="profit_margin_value" type="number" id="profit_margin_value" aria-describedby="tagline-description" value="<?php echo $profit_margin_value; ?>" class="regular-text">
+                            <span class="margin_val"><?php echo $get_currency_value; ?></span>
+                            <p class="description" id="tagline-description"><?php _e('The product is imported in EUR. Indicate how much profit you want to make in your shop currency per purchase.', 'codeswholesale_patch'); ?></p>
+                        </td>
                     </tr>
                     <tr><th scope="row"><label for="placeholder_image"><?php _e('Placeholder image', 'codeswholesale_patch'); ?></label></th>
-                        <td><input id="background_image" type="text" name="placeholder_image" value="<?php echo $get_place_holder; ?>" />
+                        <td><input id="background_image" type="text" class="regular-text" name="placeholder_image" value="<?php echo $get_place_holder; ?>" />
                         <input id="upload_image_button" type="button" class="button-primary" value="<?php _e('Search in Media...', 'codeswholesale_patch'); ?>" />
                             <p class="description" id="tagline-description"><?php _e('If the CWS API does not provide a product image for the importing product, this fallback image is used.', 'codeswholesale_patch'); ?></p></td>
                         </td>

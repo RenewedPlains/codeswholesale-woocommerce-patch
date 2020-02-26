@@ -366,14 +366,26 @@ function import_cws_product($from, $to, $import_variable) {
     $cws_quantity = json_decode($result, true)['items'][$i]['quantity'];
     $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $cws_productid);
     if($existcheck[0] >= 1 ) {
+        // Product exists
         $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
         $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
         $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
-        $setprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
-        update_post_meta($existcheck[1], '_regular_price', $setprice);
-        update_post_meta($existcheck[1], '_price', $setprice);
-        update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
-        wc_update_product_stock($existcheck[1], $cws_quantity, 'set');
+        if(substr($profit_margin_value, -1, 1) == 'a') {
+            $profit_margin_value = substr($profit_margin_value, 0, -1);
+            $setprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
+            update_post_meta($existcheck[1], '_regular_price', $setprice);
+            update_post_meta($existcheck[1], '_price', $setprice);
+            update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
+            wc_update_product_stock($existcheck[1], $cws_quantity, 'set');
+        } else {
+            $profit_margin_value = substr($profit_margin_value, 0, -1);
+            $setprice = ($cws_productprice * ($profit_margin_value / 100)) + ($cws_productprice * $get_currency_value - $cws_productprice);
+            update_post_meta($existcheck[1], '_regular_price', $setprice);
+            update_post_meta($existcheck[1], '_price', $setprice);
+            update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
+            wc_update_product_stock($existcheck[1], $cws_quantity, 'set');
+        }
+
 
         set_time_limit(120);
         $wpdb->update(

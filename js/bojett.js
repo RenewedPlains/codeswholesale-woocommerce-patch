@@ -17,4 +17,30 @@ jQuery(document).ready(function($){
         });
         mediaUploader.open();
     });
+
+    $('.margin_switch input').on('change', function() {
+        if($(this).is(':checked')) {
+        var margin = $(this).val();
+        if( margin == 'a' || margin == '' ) {
+            $('.margin_val').fadeOut(function() {
+                var current_currency = $('select[name="main_currency"]').val();
+                $('.margin_val').html(current_currency).fadeIn();
+            });
+        } else {
+            $('.margin_val').fadeOut(function() {
+                $('.margin_val').html('%').fadeIn();
+            });
+        }
+        }
+    });
+    $('select[name="main_currency"]').on('change', function() {
+        var margin = $('.margin_switch input:checked').val();
+        if(margin == 'a') {
+            $('.margin_val').fadeOut(function() {
+                var current_currency = $('select[name="main_currency"]').val();
+                $('.margin_val').html(current_currency).fadeIn();
+            });
+        }
+    });
+    $('select[name="main_currency"], .margin_switch input').trigger('change');
 });
