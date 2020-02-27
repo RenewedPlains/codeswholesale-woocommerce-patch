@@ -9,53 +9,31 @@ if($_GET['importstart'] == 'true') {
     ini_set('memory_limit', '512M');
 }
 
-function import_cws_product($from, $to, $import_variable) {
-    set_time_limit(120);
-    ini_set('memory_limit', '512M');
-    //ignore_user_abort(true);
+function import_cws_product( $from, $to, $import_variable ) {
+    set_time_limit( 120 );
+    ini_set( 'memory_limit', '512M' );
     include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 
     require_once( ABSPATH . 'wp-load.php' );
     require_once( ABSPATH . 'wp-config.php' );
 
-    /*function find_empty_games( $cars, $position ) {
-        foreach($cars as $index => $car) {
-            if($car['name'] == $position) return $index;
-        }
-        return FALSE;
-    }*/
+    if( !function_exists( 'get_single_product_description' ) ) {
 
-/*function get_single_product( $productId )
-{
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . "bojett_auth_token";
-    $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
-    $db_token = $current_access_bearer_expire;
-
-    $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
-    $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-    $result = curl_exec($ch); // Execute the cURL statement
-    curl_close($ch); // Close the cURL connection
-
-    return json_decode($result, true);
-}*/
-    if(! function_exists('get_single_product_description')) {
-
-    function get_single_product_description($productId) {
+    function get_single_product_description( $productId ) {
         global $wpdb;
         $table_name = $wpdb->prefix . "bojett_auth_token";
-        $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
+        $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
         $db_token = $current_access_bearer_expire;
 
-        $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
+        $ch = curl_init( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description' ); // Initialise cURL
         $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json', $authorization ) ); // Inject the token into the header
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1 ); // This will follow any redirects
+        if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        }
         $result = curl_exec($ch); // Execute the cURL statement
         $payload_array = json_decode($result, true)['factSheets'];
         $settings_table = $wpdb->prefix . "bojett_credentials";
@@ -83,6 +61,10 @@ function import_cws_product($from, $to, $import_variable) {
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+                if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+                }
                 $result = curl_exec($ch); // Execute the cURL statement
                 $thetitle = json_decode($result, true)['name'];
                 curl_close($ch); // Close the cURL connection
@@ -104,6 +86,10 @@ function import_cws_product($from, $to, $import_variable) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            }
             $result = curl_exec($ch); // Execute the cURL statement
             $thetitle = json_decode($result, true)['name'];
             curl_close($ch); // Close the cURL connection
@@ -125,6 +111,10 @@ function import_cws_product($from, $to, $import_variable) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            }
             $result = curl_exec($ch); // Execute the cURL statement
             $payload_array = explode(', ', json_decode($result, true)['category']);
             curl_close($ch); // Close the cURL connection
@@ -147,6 +137,10 @@ function import_cws_product($from, $to, $import_variable) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            }
             $result = curl_exec($ch); // Execute the cURL statement
             $payload_array = json_decode($result, true)['photos'];
             //var_dump($payload_array);
@@ -170,6 +164,10 @@ function import_cws_product($from, $to, $import_variable) {
                     curl_setopt($ch5, CURLOPT_RETURNTRANSFER, true);
                     curl_exec($ch5);
                     $url = curl_getinfo($ch5, CURLINFO_EFFECTIVE_URL);
+                    if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                        curl_setopt($ch5, CURLOPT_SSL_VERIFYHOST, 0);
+                        curl_setopt($ch5, CURLOPT_SSL_VERIFYPEER, 0);
+                    }
                     array_push($photo_array, array('url' => $url, 'content_type' => curl_getinfo($ch5, CURLINFO_CONTENT_TYPE)));
                     curl_close($ch5); // Close the cURL connection
                 }
@@ -325,6 +323,10 @@ function import_cws_product($from, $to, $import_variable) {
             $ch4 = curl_init($productthumb);
             curl_setopt($ch4, CURLOPT_FOLLOWLOCATION, true);
             curl_setopt($ch4, CURLOPT_RETURNTRANSFER, true);
+            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                curl_setopt($ch4, CURLOPT_SSL_VERIFYHOST, 0);
+                curl_setopt($ch4, CURLOPT_SSL_VERIFYPEER, 0);
+            }
             curl_exec($ch4);
             $thumb = curl_getinfo($ch4, CURLINFO_EFFECTIVE_URL);
             curl_close($ch4);

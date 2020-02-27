@@ -654,6 +654,10 @@ if($_GET['importstart'] == 'true' && $_POST['importstart']) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+    if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    }
     $result = curl_exec($ch);
     curl_close($ch);
 
