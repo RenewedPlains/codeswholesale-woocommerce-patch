@@ -24,6 +24,9 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
 
 ### Changelog
 #### Version 0.9.1
+  * cURL fix, when SSL it's not available
+  * bug fixes
+  
 
 #### Version 0.9.0
   * Placeholders inserted in setting fields for easier decision
