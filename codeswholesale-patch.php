@@ -372,7 +372,14 @@ if($auto_updates == '1') {
             $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
             $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
             $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM ' . $wpdb->prefix . 'bojett_credentials');
-            $setprice = ($updated_productprice * $get_currency_value) + $profit_margin_value;
+            if(substr($profit_margin_value, -1, 1) == 'a') {
+                $profit_margin_value = substr($profit_margin_value, 0, -1);
+                $setprice = ($updated_productprice * $get_currency_value) + $profit_margin_value;
+            } else {
+                $profit_margin_value = substr($profit_margin_value, 0, -1);
+                $cws_productprice_currency = $updated_productprice * $get_currency_value;
+                $setprice = $cws_productprice_currency * ($profit_margin_value / 100) + $cws_productprice_currency;
+            }
             update_post_meta($existcheck[1], '_regular_price', $setprice);
             update_post_meta($existcheck[1], '_price', $setprice);
             update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $updated_productprice);

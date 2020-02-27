@@ -381,7 +381,8 @@ function import_cws_product( $from, $to, $import_variable ) {
             wc_update_product_stock($existcheck[1], $cws_quantity, 'set');
         } else {
             $profit_margin_value = substr($profit_margin_value, 0, -1);
-            $setprice = ($cws_productprice * ($profit_margin_value / 100)) + ($cws_productprice * $get_currency_value - $cws_productprice);
+            $cws_productprice_currency = $cws_productprice * $get_currency_value;
+            $setprice = $cws_productprice_currency * ($profit_margin_value / 100) + $cws_productprice_currency;
             update_post_meta($existcheck[1], '_regular_price', $setprice);
             update_post_meta($existcheck[1], '_price', $setprice);
             update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
@@ -485,7 +486,16 @@ function import_cws_product( $from, $to, $import_variable ) {
     $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
     $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
     $post_id = wp_insert_post($post_pro);
-    $realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
+        $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
+        if(substr($profit_margin_value, -1, 1) == 'a') {
+            $profit_margin_value = substr($profit_margin_value, 0, -1);
+            $realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
+        } else {
+            $profit_margin_value = substr($profit_margin_value, 0, -1);
+            $cws_productprice_currency = $cws_productprice * $get_currency_value;
+            $realprice = $cws_productprice_currency * ($profit_margin_value / 100) + $cws_productprice_currency;
+        }
+    //$realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
     wp_set_object_terms($post_id, 'simple', 'product_type');
     update_post_meta($post_id, '_visibility', 'visible');
     update_post_meta($post_id, '_stock_status', 'instock');
