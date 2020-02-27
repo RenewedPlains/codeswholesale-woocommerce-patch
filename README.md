@@ -53,3 +53,7 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
     the correct Profit Margin Value of CodesWholesale Plugin as 
     Quickfix, so that no inequalities occur during updates, e.g. 
     if the official plugin has a different Profit Margin Value than Postback.
+    * 27.02.2020 - Add HTML GUI for importers
+    * 27.02.2020 - Add Selectfield _codeswholesale_productid on Prouctpage with all products (for sa)
+    * 27.02.2020 - Create Codetresor page for user
+    * 27.02.2020 - Add complete order process with CWS
