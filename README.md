@@ -26,7 +26,7 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
 #### Version 0.9.1
   * cURL fix, when SSL it's not available
   * bug fixes
-  
+  * product price import and update; added percentage profit margin
 
 #### Version 0.9.0
   * Placeholders inserted in setting fields for easier decision
@@ -47,3 +47,9 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
   * Added german translation for plugin
   * Fix for multiple uploader via cron
  
+
+## ToDo's
+* 27.02.2020 - Product prices: It is strongly recommended to overwrite 
+    the correct Profit Margin Value of CodesWholesale Plugin as 
+    Quickfix, so that no inequalities occur during updates, e.g. 
+    if the official plugin has a different Profit Margin Value than Postback.
