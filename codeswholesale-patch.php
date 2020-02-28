@@ -5,7 +5,7 @@ Plugin URI: https://github.com/RenewedPlains/codeswholesale-woocommerce-patch
 Description: Bojett.com Codeswholesale Plus is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 Text Domain: codeswholesale_patch
 Depends: WooCommerce
-Version: 0.9.1
+Version: 0.9.2
 Author: Mario Freuler
 Author URI: https://www.bojett.com
 License: GPL2
@@ -88,13 +88,16 @@ function create_plugin_database_tables( )
     {
         $sql3 = "CREATE TABLE `". $bojett_import_table . "` ( ";
         $sql3 .= "  `id`  int(11)   NOT NULL auto_increment, ";
-        $sql3 .= "  `name`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `cws_id`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  `cws_game_title`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  `cws_game_price`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  `cws_phpworker`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `created_at`  varchar(128)   NOT NULL, ";
         $sql3 .= "  PRIMARY KEY (`id`) ";
         $sql3 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql3);
     }
+
     $worker = 'bojett_import_worker';
     $bojett_worker_table = $table_prefix . "$worker";
     if($wpdb->get_var( "show tables like '$bojett_worker_table'" ) != $bojett_worker_table)
@@ -421,6 +424,41 @@ function bojett_settings() {
         } else {
             $import_batch_size = '20';
         }
+        if($profit_margin == 'a') {
+            $get_cw_options = $wpdb->get_var('SELECT `option_value` FROM `' . $wpdb->prefix . 'options` WHERE `option_name` = "cw_options"');
+            $cw_options = unserialize($get_cw_options);
+            $cw_options['spread_type'] = 0;
+            $cw_options['spread_value'] = $_POST['profit_margin_value'];
+            $cw_options_update = serialize($cw_options);
+            $wpdb->update(
+                $wpdb->prefix.'options',
+                array(
+                    'option_value' => $cw_options_update
+                ),
+                array( 'option_name' => 'cw_options' ),
+                array(
+                    '%s'
+                ),
+                array( '%s' )
+            );
+        } else {
+            $get_cw_options = $wpdb->get_var('SELECT `option_value` FROM `' . $wpdb->prefix . 'options` WHERE `option_name` = "cw_options"');
+            $cw_options = unserialize($get_cw_options);
+            $cw_options['spread_type'] = 1;
+            $cw_options['spread_value'] = $_POST['profit_margin_value'];
+            $cw_options_update = serialize($cw_options);
+            $wpdb->update(
+                $wpdb->prefix.'options',
+                array(
+                    'option_value' => $cw_options_update
+                ),
+                array( 'option_name' => 'cw_options' ),
+                array(
+                    '%s'
+                ),
+                array( '%s' )
+            );
+        }
         if($_POST['profit_margin_value'] != '') {
             $profit_margin_value = $_POST['profit_margin_value'] . $profit_margin;
         } else {
@@ -483,6 +521,7 @@ function bojett_settings() {
     $get_place_holder = $wpdb->get_var('SELECT placeholder_image FROM '.$table_prefix.'bojett_credentials');
     $get_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
     $auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
+
     if(substr($profit_margin_value, -1, 1) == 'a') {
         $margin = 'a';
     } else if(substr($profit_margin_value, -1, 1) == 'p') {
@@ -490,8 +529,13 @@ function bojett_settings() {
     } else {
         $margin = 'a';
     }
-
     $profit_margin_value = substr($profit_margin_value, 0, -1);
+    $get_cw_options = $wpdb->get_var('SELECT `option_value` FROM `' . $wpdb->prefix . 'options` WHERE `option_name` = "cw_options"');
+    $cw_options = unserialize($get_cw_options);
+    if($cw_options['environment'] == 1) {
+        $api_client_id = $cw_options['api_client_id'];
+        $api_client_secret = $cw_options['api_client_secret'];
+    }
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">
@@ -503,11 +547,11 @@ function bojett_settings() {
                 <table class="form-table" role="presentation">
                     <tbody><tr>
                         <th scope="row"><label for="cws_client_id"><?php _e('Your CWS API Client ID', 'codeswholesale_patch'); ?></label></th>
-                        <td><input name="cws_client_id" type="text" id="cws_client_id" value="<?php echo $get_client_id; ?>" class="regular-text"></td>
+                        <td><input name="cws_client_id" type="text" id="cws_client_id" value="<?php if( $get_client_id ) { echo $get_client_id; } else { echo $api_client_id; } ?>" class="regular-text"></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="cws_secret_id"><?php _e('Your CWS API Secret ID', 'codeswholesale_patch'); ?></label></th>
-                        <td><input name="cws_secret_id" type="text" id="cws_secret_id" aria-describedby="tagline-description" value="<?php echo $get_client_secret; ?>" class="regular-text">
+                        <td><input name="cws_secret_id" type="text" id="cws_secret_id" aria-describedby="tagline-description" value="<?php if( $get_client_secret ) { echo $get_client_secret; } else { echo $api_client_secret; } ?>" class="regular-text">
                     </tr>
                     </tbody>
                 </table><br />
@@ -594,7 +638,14 @@ function bojett_settings() {
     <?php
 }
 
-function get_string_between($string, $start, $end){
+
+/* Callback function for post time and date filter hooks */
+function meks_convert_to_time_ago( $orig_time ) {
+    return human_time_diff( $orig_time, current_time( 'timestamp' ) ).' '.__( 'ago' );
+}
+
+function get_string_between($string, $start, $end)
+{
     $string = ' ' . $string;
     $ini = strpos($string, $start);
     if ($ini == 0) return '';
@@ -831,23 +882,32 @@ function render_custom_link_page() {
         echo '<code>' . $get_importnumber . ' ' . __('products were totally imported', 'codeswholesale_patch') . '</code>';
     }
     echo '<hr class="wp-header-end">
-    <div class="importer_container"></div>
+    <div class="importer_container"></div>';
+    include_once('includes/importer-ui.php');
+    echo '</div>';
+    $import_worker = $wpdb->get_results('SELECT * FROM '.$wpdb->prefix.'bojett_import_worker');
+    if(count($import_worker) != 0) {
+    ?>
 
-    </div>'; ?>
-        <script>/*
+        <script>
     jQuery(function() {
-        jQuery(".clickme").on("click", function() {
+        setInterval(function() {
+            var i = 1;
             jQuery.ajax({
-      url: "/wp-content/plugins/codeswholesale-patch/importaction.php",
-    }).done(function( data ) {
-        jQuery(".wrap h1").after('<div class="success notice-success notice importcall"><p></p></div>');
-          jQuery(".importer_container").html(data);
-          console.log(data);
-      });
-        });
-    });*/
+                url: "../wp-content/plugins/codeswholesale-woocommerce-patch/includes/importer-ui.php?get_as_json=true",
+            }).done(function( data ) {
+                var result = JSON.parse(jQuery(data).filter('.metaimport').html());
+                jQuery.each(result, function(importbatch) {
+                    jQuery('.plugin-card:nth-child(' + i + ') .product_title').html(this.cws_game_title);
+                    jQuery('.plugin-card:nth-child(' + i + ') .product_price').html(this.cws_game_price + ' EUR');
+                    jQuery('.plugin-card:nth-child(' + i + ') .timeago').html(this.cws_last_update);
+                    i++;
+                });
+            });
+        }, 2500);
+    });
     </script>
-<?php
+<?php }
 }
 
 

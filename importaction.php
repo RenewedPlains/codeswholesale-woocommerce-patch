@@ -51,8 +51,33 @@ function import_cws_product( $from, $to, $import_variable ) {
         }
     }
     }
+    if(! function_exists('update_worker')) {
+        function update_worker($gameid, $gametitle, $gameprice, $importworker)
+        {
+            global $wpdb;
+            $timestamp = time();
+            $wpdb->insert($wpdb->prefix . 'bojett_import', array(
+                'cws_id' => $gameid,
+                'cws_game_title' => $gametitle,
+                'cws_game_price' => $gameprice,
+                'cws_phpworker' => $importworker,
+                'created_at' => $timestamp
+            ));
+            $timestamp = time();
+            $wpdb->update(
+                $wpdb->prefix . 'bojett_import_worker',
+                array(
+                    'last_update' => $timestamp
+                ),
+                array('name' => $importworker),
+                array(
+                    '%s'
+                ),
+                array('%s')
+            );
+        }
+    }
     if(! function_exists('checktitle')) {
-
         function checktitle($fix_title, $productId, $db_token)
         {
             if ($fix_title == '') {
@@ -367,6 +392,7 @@ function import_cws_product( $from, $to, $import_variable ) {
     $cws_productprice = json_decode($result, true)['items'][$i]['prices'][2]['value'];
     $cws_quantity = json_decode($result, true)['items'][$i]['quantity'];
     $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $cws_productid);
+    update_worker($cws_productid, $producttitle, $cws_productprice, $import_variable);
     if($existcheck[0] >= 1 ) {
         // Product exists
         $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
@@ -431,9 +457,12 @@ function import_cws_product( $from, $to, $import_variable ) {
             if ($get_import_state != 'ABORTED') {
                 add_action($import_variable, 'import_cws_product', 5, 3);
                 wp_schedule_single_event($timestamp, $import_variable, array($from_new, $to_new, $import_variable));
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and restarted \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             } else {
                 $table_name = $wpdb->prefix . "bojett_import_worker";
                 $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and failed restart \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+
             }
         }
         continue;
@@ -627,9 +656,11 @@ function import_cws_product( $from, $to, $import_variable ) {
             if($get_import_state != 'ABORTED') {
                 add_action( $import_variable, 'import_cws_product', 5, 3 );
                 wp_schedule_single_event( $timestamp, $import_variable, array( $from_new, $to_new, $import_variable ) );
+                error_log('1 ' . date('d.m.Y H:i:s') . " || " . $existcheck[1] . " - " . $import_variable . " closed and restarted after new product \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             } else {
                 $table_name = $wpdb->prefix . "bojett_import_worker";
                 $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
+                error_log('1 ' . date('d.m.Y H:i:s') . " || " . $existcheck[1] . " - " . $import_variable . " closed and failed restarted after new product \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             }
         }
     }

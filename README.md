@@ -1,5 +1,5 @@
 # CodesWholesale WooCommerce Patch
-Current Version: `0.9.1`-dev
+Current Version: `0.9.2`-dev
 
 This repository requires a Wordpress Woocommerce instance with preconfigured Codeswholesale for WooCommerce plugin. The Codeswholesale patch is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 
@@ -23,6 +23,11 @@ will be developed further until a version is created which completely replaces t
 Please consider reporting bugs and possible improvements via Issue on GitHub or on the official CodesWholesale support Discord Server.
 
 ### Changelog
+#### Version 0.9.2
+  * Change value from official CWS plugin for product prices
+  * Get automatically CWS API credentials from official CWS Plugin
+  
+
 #### Version 0.9.1
   * cURL fix, when SSL it's not available
   * bug fixes
@@ -49,11 +54,15 @@ Please consider reporting bugs and possible improvements via Issue on GitHub or 
  
 
 ## ToDo's
-* 27.02.2020 - Product prices: It is strongly recommended to overwrite 
+* ~~27.02.2020 - Product prices: It is strongly recommended to overwrite 
     the correct Profit Margin Value of CodesWholesale Plugin as 
     Quickfix, so that no inequalities occur during updates, e.g. 
-    if the official plugin has a different Profit Margin Value than Postback.
-    * 27.02.2020 - Add HTML GUI for importers
-    * 27.02.2020 - Add Selectfield _codeswholesale_productid on Prouctpage with all products (for sa)
-    * 27.02.2020 - Create Codetresor page for user
-    * 27.02.2020 - Add complete order process with CWS
+    if the official plugin has a different Profit Margin Value than Postback.~~
+* 27.02.2020 - Add HTML GUI for importers
+* 27.02.2020 - Add Selectfield _codeswholesale_productid on Prouctpage with all products (for sa)
+* 27.02.2020 - Create Codetresor page for user
+* 27.02.2020 - Add complete order process with CWS
+* 28.02.2020 - When we stop the import process, it should be aborted faster e.g. after
+    next product import.
+* 28.02.2020 - Modify offline importer cards for visuals
+* 28.02.2020 - Add Updater card when Postback is triggered
