@@ -1,5 +1,5 @@
 # CodesWholesale WooCommerce Patch
-Current Version: `0.9.2`-dev
+Current Version: `0.9.3`-dev
 
 This repository requires a Wordpress Woocommerce instance with preconfigured Codeswholesale for WooCommerce plugin. The Codeswholesale patch is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 
@@ -23,10 +23,14 @@ will be developed further until a version is created which completely replaces t
 Please consider reporting bugs and possible improvements via Issue on GitHub or on the official CodesWholesale support Discord Server.
 
 ### Changelog
+#### Version 0.9.3
+  * Added new HTML GUI for importer
+  * Fixed bearer token aborting import process (can't verify the account on CWS)
+  * Added errorlog in includes folder 'passive_log.txt'
+
 #### Version 0.9.2
   * Change value from official CWS plugin for product prices
   * Get automatically CWS API credentials from official CWS Plugin
-  
 
 #### Version 0.9.1
   * cURL fix, when SSL it's not available
