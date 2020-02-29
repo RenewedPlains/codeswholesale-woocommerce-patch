@@ -15,12 +15,10 @@ ob_start( );
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
-
 global $wpdb;
 
-
 /*
- * Load the plugin textdomain for using the language templates
+ * Load the plugin textdomain for using the language templates.
  */
 function load_bojett_translations( )
 {
@@ -33,23 +31,23 @@ add_action( 'init', 'load_bojett_translations' );
  */
 function create_plugin_database_tables( )
 {
-    // Kill all plugin databases
+    // Kill all plugin tables
     global $table_prefix, $wpdb;
     $sql = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_auth_token';
-    $wpdb->query($sql);
+    $wpdb->query( $sql );
     $sql2 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_credentials';
-    $wpdb->query($sql2);
+    $wpdb->query( $sql2 );
     $sql3 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import';
-    $wpdb->query($sql3);
+    $wpdb->query( $sql3 );
     $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
-    $wpdb->query($sql4);
+    $wpdb->query( $sql4 );
     $sql5 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_currency_rates';
-    $wpdb->query($sql5);
+    $wpdb->query( $sql5 );
     // Create new plugin databases
     $credentials = 'bojett_credentials';
     $bojett_credentials_table = $table_prefix . "$credentials";
     require_once( ABSPATH . '/wp-admin/includes/upgrade.php' );
-    if($wpdb->get_var( "show tables like '$bojett_credentials_table'" ) != $bojett_credentials_table)
+    if( $wpdb->get_var( "show tables like '$bojett_credentials_table'" ) != $bojett_credentials_table )
     {
         $placeholder_image = esc_url( plugins_url( 'img/no-image.jpg', __FILE__ ) );
         $sql = "CREATE TABLE `". $bojett_credentials_table . "` ( ";
@@ -68,11 +66,11 @@ function create_plugin_database_tables( )
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (`id`) ";
         $sql .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
-        dbDelta($sql);
+        dbDelta( $sql );
     }
     $token = 'bojett_auth_token';
     $bojett_token_table = $table_prefix . "$token";
-    if($wpdb->get_var( "show tables like '$bojett_token_table'" ) != $bojett_token_table)
+    if( $wpdb->get_var( "show tables like '$bojett_token_table'" ) != $bojett_token_table )
     {
         $sql2 = "CREATE TABLE `". $bojett_token_table . "` ( ";
         $sql2 .= "  `id`  int(11) NOT NULL auto_increment, ";
@@ -80,11 +78,11 @@ function create_plugin_database_tables( )
         $sql2 .= "  `cws_access_token`  varchar(128) DEFAULT NULL, ";
         $sql2 .= "  PRIMARY KEY (`id`) ";
         $sql2 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
-        dbDelta($sql2);
+        dbDelta( $sql2 );
     }
     $import = 'bojett_import';
     $bojett_import_table = $table_prefix . "$import";
-    if($wpdb->get_var( "show tables like '$bojett_import_table'" ) != $bojett_import_table)
+    if( $wpdb->get_var( "show tables like '$bojett_import_table'" ) != $bojett_import_table )
     {
         $sql3 = "CREATE TABLE `". $bojett_import_table . "` ( ";
         $sql3 .= "  `id`  int(11)   NOT NULL auto_increment, ";
@@ -95,12 +93,12 @@ function create_plugin_database_tables( )
         $sql3 .= "  `created_at`  varchar(128)   NOT NULL, ";
         $sql3 .= "  PRIMARY KEY (`id`) ";
         $sql3 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
-        dbDelta($sql3);
+        dbDelta( $sql3 );
     }
 
     $worker = 'bojett_import_worker';
     $bojett_worker_table = $table_prefix . "$worker";
-    if($wpdb->get_var( "show tables like '$bojett_worker_table'" ) != $bojett_worker_table)
+    if( $wpdb->get_var( "show tables like '$bojett_worker_table'" ) != $bojett_worker_table )
     {
         $sql4 = "CREATE TABLE `". $bojett_worker_table . "` ( ";
         $sql4 .= "  `id`  int(11)   NOT NULL auto_increment, ";
@@ -112,12 +110,12 @@ function create_plugin_database_tables( )
         $sql4 .= "  `cws_message`  varchar(128)   NOT NULL, ";
         $sql4 .= "  PRIMARY KEY (`id`) ";
         $sql4 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
-        dbDelta($sql4);
+        dbDelta( $sql4 );
     }
 
     $currency_rates = 'bojett_currency_rates';
     $bojett_currency_rates_table = $table_prefix . "$currency_rates";
-    if($wpdb->get_var( "show tables like '$bojett_currency_rates_table'" ) != $bojett_currency_rates_table)
+    if( $wpdb->get_var( "show tables like '$bojett_currency_rates_table'" ) != $bojett_currency_rates_table )
     {
         $sql5 = "CREATE TABLE `". $bojett_currency_rates_table . "` ( ";
         $sql5 .= "  `id`  int(11)   NOT NULL auto_increment, ";
@@ -127,9 +125,10 @@ function create_plugin_database_tables( )
         $sql5 .= "  `last_update`  varchar(128)   NOT NULL, ";
         $sql5 .= "  PRIMARY KEY (`id`) ";
         $sql5 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
-        dbDelta($sql5);
+        dbDelta( $sql5 );
     }
 
+    // Request of current currencies with values to EUR
     $wpdb->query( "TRUNCATE TABLE " .$wpdb->prefix . "bojett_currency_rates" );
     $chc = curl_init( 'https://api.exchangeratesapi.io/latest?base=EUR' );
     curl_setopt( $chc, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json' ) );
@@ -139,13 +138,13 @@ function create_plugin_database_tables( )
     $result = curl_exec( $chc );
     curl_close( $chc );
     $exchange_rates_eur = json_decode( $result, true )['rates'];
-    $current_timestamp = time();
+    $current_timestamp = time( );
     $wpdb->insert( $bojett_currency_rates_table, array(
         'name' => 'EUR',
         'value' => '1',
         'last_update' => $current_timestamp
     ) );
-    foreach($exchange_rates_eur as $currency_name => $currency_rate) {
+    foreach( $exchange_rates_eur as $currency_name => $currency_rate ) {
         $current_timestamp = time();
         $wpdb->insert( $bojett_currency_rates_table, array(
             'name' => $currency_name,
@@ -156,19 +155,22 @@ function create_plugin_database_tables( )
 }
 register_activation_hook( __FILE__, 'create_plugin_database_tables' );
 
+/*
+ * Delete all plugin tables when deactivating the plugin.
+ */
 function delete_bojett_tables( )
 {
     global $wpdb;
     $sql = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_auth_token';
-    $wpdb->query($sql);
+    $wpdb->query( $sql );
     $sql2 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_credentials';
-    $wpdb->query($sql2);
+    $wpdb->query( $sql2 );
     $sql3 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import';
-    $wpdb->query($sql3);
+    $wpdb->query( $sql3 );
     $sql4 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_import_worker';
-    $wpdb->query($sql4);
+    $wpdb->query( $sql4 );
     $sql5 = "DROP TABLE IF EXISTS $wpdb->prefix". 'bojett_currency_rates';
-    $wpdb->query($sql5);
+    $wpdb->query( $sql5 );
 }
 register_deactivation_hook( __FILE__, 'delete_bojett_tables' );
 
@@ -178,18 +180,7 @@ register_deactivation_hook( __FILE__, 'delete_bojett_tables' );
 add_action( 'plugins_loaded', 'check_codeswholesale_plugin', 100 );
 function check_codeswholesale_plugin( )
 {
-    if ( is_plugin_active( 'codeswholesale-for-woocommerce/codeswholesale.php' ) ) {
-        // TODO: if the codeswholesale plugin not configured, notice the administrator.
-        /*add_action('init', 'conf_remember');
-        function conf_remember() {
-            ?>
-            <div class="error notice">
-                <p><?php _e( 'Plugin is activated but not configured yet. Please configure the original plugin - we can start after that with the import! ', 'codeswholesale_patch' ); ?></p>
-            </div>
-            <?php
-        }
-        add_action( 'admin_notices', 'my_error_notice' );*/
-    } else {
+    if ( !is_plugin_active( 'codeswholesale-for-woocommerce/codeswholesale.php' ) ) {
         deactivate_plugins( plugin_basename( __FILE__ ) );
         unset( $_GET['activate'] );
         function my_error_notice( ) {
@@ -259,7 +250,8 @@ function run_cws_cron_script( ) {
     $db_expires_in = $access_expires_in;
     $current_timestamp = time( );
 
-    if( $db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL ) {
+    if( $db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL )
+    {
         if( $client_id == NULL || $client_secret == NULL ) {
             // Delete current bearer because no clientkeys are set
             $table_name = $wpdb->prefix . "bojett_auth_token";
@@ -290,7 +282,8 @@ function run_cws_cron_script( ) {
     }
 }
 
-function check_update_bearer_token( ) {
+function check_update_bearer_token( )
+{
     global $wpdb;
     if ( !wp_next_scheduled( 'check_update_bearer_token' ) ) {
         $table_name = $wpdb->prefix . "bojett_auth_token";
@@ -299,7 +292,7 @@ function check_update_bearer_token( ) {
     }
 }
 add_action( 'check_update_bearer_token', 'run_cws_cron_script' );
-check_update_bearer_token();
+check_update_bearer_token( );
 
 function pull_currencies() {
     global $wpdb;
