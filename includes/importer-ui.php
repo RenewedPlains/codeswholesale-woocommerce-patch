@@ -16,8 +16,12 @@ if($_GET['get_as_json'] == 'true') {
         foreach($this_worker as $the_worker) {
             $collector["$single_worker->name"] = array();
             $collector["$single_worker->name"]['cws_id'] = $the_worker->cws_id;
+            $collector["$single_worker->name"]['cws_message'] = $single_worker->cws_message;
             $collector["$single_worker->name"]['cws_game_title'] = $the_worker->cws_game_title;
             $collector["$single_worker->name"]['cws_game_price'] = $the_worker->cws_game_price;
+            $collector["$single_worker->name"]['last_product'] = $single_worker->last_product;
+            $collector["$single_worker->name"]['from_all'] = $single_worker->from;
+            $collector["$single_worker->name"]['to_all'] = $single_worker->to;
             $collector["$single_worker->name"]['cws_phpworker'] = $the_worker->cws_phpworker;
             $collector["$single_worker->name"]['cws_last_update'] = convert_to_time_ago($the_worker->created_at);
         }
@@ -57,13 +61,14 @@ if($_GET['get_as_json'] == 'true') {
                         <ul class="plugin-action-buttons">
                             <li>
                                 <a href="#" class="button disabled" aria-label="Aktiviere Akismet Anti-Spam"><?php _e('No import active', 'codeswholesale_patch'); ?></a>
+                                <span class="big_count"></span>
                             </li>
                         </ul>
                     </div>
                     <div class="column-description">
                         <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
                         <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
-                        <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_categories"><cite>Idle - importer not active</cite></span></p>
+                        <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
                     </div>
                 </div>
                 <div class="plugin-card-bottom">
@@ -104,7 +109,7 @@ if($_GET['get_as_json'] == 'true') {
                             <div class="column-description">
                                 <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
                                 <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
-                                <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_categories"><cite>Idle - importer not active</cite></span></p>
+                                <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
                             </div>
                         </div>
                         <div class="plugin-card-bottom">

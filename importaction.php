@@ -9,68 +9,141 @@ if($_GET['importstart'] == 'true') {
     ini_set('memory_limit', '512M');
 }
 
-function import_cws_product( $from, $to, $import_variable ) {
-    set_time_limit( 120 );
-    ini_set( 'memory_limit', '512M' );
-    include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
+function import_cws_product( $from, $to, $import_variable )
+{
+    set_time_limit(240);
+    ini_set('memory_limit', '512M');
+    include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+    require_once(ABSPATH . 'wp-load.php');
+    require_once(ABSPATH . 'wp-config.php');
+    global $wpdb;
 
-    require_once( ABSPATH . 'wp-load.php' );
-    require_once( ABSPATH . 'wp-config.php' );
+    if (!function_exists('check_bearer_valid'))  {
+        function check_bearer_valid() {
+            global $wpdb, $import_variable;
+            $table_name = $wpdb->prefix . "bojett_auth_token";
+            $current_access_bearer_expire = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
+            if ($current_access_bearer_expire - 120 <= time()) {
+                $expire_diff = $current_access_bearer_expire - time();
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . ": Bearer is expiring! :( " . $expire_diff . "s  \n", 3, 'wp-content/plugins/' . dirname(plugin_basename(__FILE__)) . '/includes/passive_log.txt');
+                sleep($expire_diff + 10);
+                $table_name = $wpdb->prefix . "bojett_auth_token";
+                $options_name = $wpdb->prefix . "bojett_credentials";
+                $access_bearer = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
+                $access_expires_in = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
+                $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
+                $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
+                $db_token = $access_bearer;
+                $db_expires_in = $access_expires_in;
+                $current_timestamp = time();
 
-    if( !function_exists( 'get_single_product_description' ) ) {
+                if ($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
+                    if ($client_id == NULL || $client_secret == NULL) {
+                        // Delete current bearer because no clientkeys are set
+                        $table_name = $wpdb->prefix . "bojett_auth_token";
+                        $wpdb->query("TRUNCATE TABLE $table_name");
+                    }
+                    // Do nothing, the bearer is already up to date.
+                } else {
+                    $options_name = $wpdb->prefix . "bojett_credentials";
+                    $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
+                    $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
 
-    function get_single_product_description( $productId ) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . "bojett_auth_token";
-        $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
-        $db_token = $current_access_bearer_expire;
-
-        $ch = curl_init( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description' ); // Initialise cURL
-        $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-        curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json', $authorization ) ); // Inject the token into the header
-        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1 ); // This will follow any redirects
-        if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        }
-        $result = curl_exec($ch); // Execute the cURL statement
-        $payload_array = json_decode($result, true)['factSheets'];
-        $settings_table = $wpdb->prefix . "bojett_credentials";
-        $get_defined_import_language = $wpdb->get_var("SELECT description_language FROM $settings_table");
-        curl_close($ch); // Close the cURL connection
-
-        if (is_array($payload_array)) {
-            foreach ($payload_array as $product_description) {
-                if ($product_description['territory'] == $get_defined_import_language && $product_description['description'] != '') {
-                    return $product_description['description'];
+                    $ch = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json')); // Inject the token into the header
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
+                    $result = curl_exec($ch); // Execute the cURL statement
+                    curl_close($ch); // Close the cURL connection*/
+                    $new_bearer = json_decode($result, true)['access_token'];
+                    $new_bearer_expires = json_decode($result, true)['expires_in'];
+                    $new_db_expires_in = $current_timestamp + $new_bearer_expires;
+                    $table_name = $wpdb->prefix . "bojett_auth_token";
+                    $wpdb->query("TRUNCATE TABLE $table_name");
+                    $wpdb->insert($table_name, array(
+                        'cws_expires_in' => $new_db_expires_in,
+                        'cws_access_token' => $new_bearer
+                    ));
                 }
             }
-        } else {
-            return false;
         }
     }
+
+    check_bearer_valid();
+
+    $wpdb->update(
+        $wpdb->prefix . 'bojett_import_worker',
+        array(
+            'last_update' => time(),
+            'from' => $from,
+            'to' => $to
+        ),
+        array('name' => $import_variable),
+        array(
+            '%s',
+            '%s'
+        ),
+        array('%s')
+    );
+
+    if( !function_exists( 'get_single_product_description' ) )
+    {
+        function get_single_product_description( $productId )
+        {
+            global $wpdb;
+            $table_name = $wpdb->prefix . "bojett_auth_token";
+            $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+            $db_token = $current_access_bearer_expire;
+            $ch = curl_init( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description' );
+            $authorization = "Authorization: Bearer " . $db_token;
+            curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json', $authorization ) );
+            curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+            curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1 );
+            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            }
+            $result = curl_exec($ch);
+            $payload_array = json_decode($result, true)['factSheets'];
+            $settings_table = $wpdb->prefix . "bojett_credentials";
+            $get_defined_import_language = $wpdb->get_var("SELECT description_language FROM $settings_table");
+            curl_close($ch);
+
+            if (is_array($payload_array)) {
+                foreach ($payload_array as $product_description) {
+                    if ($product_description['territory'] == $get_defined_import_language && $product_description['description'] != '') {
+                        return $product_description['description'];
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
     }
     if(! function_exists('update_worker')) {
-        function update_worker($gameid, $gametitle, $gameprice, $importworker)
+        function update_worker($gameid, $gametitle, $gameprice, $importworker, $message)
         {
             global $wpdb;
             $timestamp = time();
-            $wpdb->insert($wpdb->prefix . 'bojett_import', array(
-                'cws_id' => $gameid,
-                'cws_game_title' => $gametitle,
-                'cws_game_price' => $gameprice,
-                'cws_phpworker' => $importworker,
-                'created_at' => $timestamp
-            ));
-            $timestamp = time();
+            if($gametitle != false) {
+                $wpdb->insert($wpdb->prefix . 'bojett_import', array(
+                    'cws_id' => $gameid,
+                    'cws_game_title' => $gametitle,
+                    'cws_game_price' => $gameprice,
+                    'cws_phpworker' => $importworker,
+                    'created_at' => $timestamp
+                ));
+            }
             $wpdb->update(
                 $wpdb->prefix . 'bojett_import_worker',
                 array(
-                    'last_update' => $timestamp
+                    'last_update' => $timestamp,
+                    'cws_message' => $message
                 ),
                 array('name' => $importworker),
                 array(
+                    '%s',
                     '%s'
                 ),
                 array('%s')
@@ -362,7 +435,6 @@ function import_cws_product( $from, $to, $import_variable ) {
 
 // Get productdata
     $cws_productid = json_decode($result, true)['items'][$i]['productId']; // gets cws product id e.g. 04a8137c-0de9-42d4-8959-f15ca2567862
-    error_log("ATTENTION, IMPORT PREPARE: " .$cws_productid);
 
     $productpicture = $thumb; // will return a single string for main productimage e.g. https://api.codeswholesale.com/v1/products/f62cab33-27ec-4c3d-a0ea-b3c7925c7fbf/image?format=MEDIUM
     $catalognumber = json_decode($result, true)['items'][$i]['identifier']; // gets cws product SKU as String e.g. "MMCOHEU"
@@ -392,7 +464,7 @@ function import_cws_product( $from, $to, $import_variable ) {
     $cws_productprice = json_decode($result, true)['items'][$i]['prices'][2]['value'];
     $cws_quantity = json_decode($result, true)['items'][$i]['quantity'];
     $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $cws_productid);
-    update_worker($cws_productid, $producttitle, $cws_productprice, $import_variable);
+    update_worker($cws_productid, $producttitle, $cws_productprice, $import_variable, __("Product data are read in.", "codeswholesale_patch"));
     if($existcheck[0] >= 1 ) {
         // Product exists
         $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
@@ -414,7 +486,9 @@ function import_cws_product( $from, $to, $import_variable ) {
             update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $cws_productprice);
             wc_update_product_stock($existcheck[1], $cws_quantity, 'set');
         }
-
+        update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product price is adjusted for currency and profit", "codeswholesale_patch"));
+        set_time_limit(240);
+        error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " included wp-cron successfully after updating Product \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
 
         set_time_limit(120);
         $wpdb->update(
@@ -430,8 +504,13 @@ function import_cws_product( $from, $to, $import_variable ) {
             ),
             array( '%s' )
         );
-        if ($i == ($to - 1)) {
+        update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product was successfully updated (price and stock)", "codeswholesale_patch"));
+        $settings_table = $wpdb->prefix . "bojett_import_worker";
+        $from = $wpdb->get_var("SELECT `from` FROM $settings_table WHERE `name` = '$import_variable'");
+        $to = $wpdb->get_var("SELECT `to` FROM $settings_table WHERE `name` = '$import_variable'");
+        if ($i == $to - 1) {
             $timestamp = time();
+            update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Import worker was completed. Start new import batch", "codeswholesale_patch"));
             $table_name = $wpdb->prefix . "bojett_import_worker";
             wp_clear_scheduled_hook($import_variable, array($from, $to, $import_variable));
             $get_import_state = $wpdb->get_var('SELECT last_updated FROM ' . $wpdb->prefix . 'bojett_credentials');
@@ -457,19 +536,19 @@ function import_cws_product( $from, $to, $import_variable ) {
             if ($get_import_state != 'ABORTED') {
                 add_action($import_variable, 'import_cws_product', 5, 3);
                 wp_schedule_single_event($timestamp, $import_variable, array($from_new, $to_new, $import_variable));
-                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and restarted \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and restarted \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             } else {
                 $table_name = $wpdb->prefix . "bojett_import_worker";
                 $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
-                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and failed restart \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
-
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and failed (ABORTED) restart \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             }
+            error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " has returned and should be executed now \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         }
         continue;
     }
     if ($productcategories[0] != "") {
-
         $tager = [];
+        update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product categories are collected and applied", "codeswholesale_patch"));
         foreach ($productcategories as $prod_cat) {
             if (!term_exists($prod_cat, 'product_cat')) {
                 $term = wp_insert_term($prod_cat, 'product_cat');
@@ -482,17 +561,7 @@ function import_cws_product( $from, $to, $import_variable ) {
         }
 
     }
-    /*
-    echo '<pre>';
-    var_dump(json_decode($result,true)['items'][$current_product]);
-    //get_single_product_description($cws_productid);
 
-    //var_dump( get_single_product_screenshots('04a8137c-0de9-42d4-8959-f15ca2567862'));
-    //get_single_product( '04a8137c-0de9-42d4-8959-f15ca2567862' );
-
-    //var_dump( json_decode($result,true)['items'][8585]);
-    echo '</pre>';
-    //WORKS echo count(json_decode($result, true)['items']);*/
     $user_id = 1; // So, user is selected..
     if ($producttitle == '') {
         $producttitle_set = json_decode($result, true)['items'][$i]['name'];
@@ -524,7 +593,9 @@ function import_cws_product( $from, $to, $import_variable ) {
             $cws_productprice_currency = $cws_productprice * $get_currency_value;
             $realprice = $cws_productprice_currency * ($profit_margin_value / 100) + $cws_productprice_currency;
         }
-    //$realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
+        update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product prices are calculated", "codeswholesale_patch"));
+
+        //$realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
     wp_set_object_terms($post_id, 'simple', 'product_type');
     update_post_meta($post_id, '_visibility', 'visible');
     update_post_meta($post_id, '_stock_status', 'instock');
@@ -572,7 +643,7 @@ function import_cws_product( $from, $to, $import_variable ) {
     wc_update_product_stock($post_id, $cws_quantity, 'set');
     wp_set_object_terms($post_id, $tager, 'product_cat');
     set_time_limit(120);
-    error_log("ATTENTION, IMPORT READY: " .$post_id . ' -> ' . $producttitle);
+    update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product was successfully added (" . $post_id . ")", "codeswholesale_patch"));
     /**
      * Attach images to product (feature/ gallery)
      */
@@ -580,21 +651,20 @@ function import_cws_product( $from, $to, $import_variable ) {
 
     attach_product_thumbnail($post_id, $productpicture, 0, '');
     if(is_array($productphotos)) {
+        update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product pictures are collected", "codeswholesale_patch"));
         foreach ($productphotos as $screenshots) {
             //set gallery image
             $screenshot_url = $screenshots['url'];
             $screenshot_mime = $screenshots['content_type'];
-
-
             if ($screenshot_mime == 'image/jpeg') {
                 $screenshot_ext = '.jpg';
-
                 attach_product_thumbnail($post_id, $screenshot_url, 1, $screenshot_ext);
+                update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product images were added to the product", "codeswholesale_patch"));
             } else if ($screenshot_mime == 'image/png') {
                 $screenshot_ext = '.png';
                 attach_product_thumbnail($post_id, $screenshot_url, 1, $screenshot_ext);
+                update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product images were added to the product", "codeswholesale_patch"));
             }
-
         }
     }
 
@@ -608,28 +678,21 @@ function import_cws_product( $from, $to, $import_variable ) {
 
 
     global $wpdb;
-    $table_title = $wpdb->prefix . 'codeswholesale_postback_import_details';
-    $wpdb->insert($table_title, array(
-        'created_at' => time(),
-        'import_id' => 'ID',
-        'name' => $producttitle,
-        'import_time' => time(),
-        'product_id' => $post_id,
-    ));
         $wpdb->update(
-            $wpdb->prefix.'bojett_import_worker',
+            $wpdb->prefix . 'bojett_import_worker',
             array(
                 'last_product' => $i,
                 'last_update' => time()
             ),
-            array( 'name' => $import_variable ),
+            array('name' => $import_variable),
             array(
                 '%d',
                 '%d',
             ),
-            array( '%s' )
+            array('%s')
         );
-        if($i == ($to - 1)) {
+        if($i == $to - 1) {
+            update_worker($cws_productid, false, $cws_productprice, $import_variable, _("Import worker was completed. Start new import batch", "codeswholesale_patch"));
             $timestamp = time();
             $table_name = $wpdb->prefix . "bojett_import_worker";
             wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );
@@ -656,11 +719,12 @@ function import_cws_product( $from, $to, $import_variable ) {
             if($get_import_state != 'ABORTED') {
                 add_action( $import_variable, 'import_cws_product', 5, 3 );
                 wp_schedule_single_event( $timestamp, $import_variable, array( $from_new, $to_new, $import_variable ) );
-                error_log('1 ' . date('d.m.Y H:i:s') . " || " . $existcheck[1] . " - " . $import_variable . " closed and restarted after new product \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+                error_log('1 ' . date('d.m.Y H:i:s') . " || " . $existcheck[1] . " - " . $import_variable . " closed and restarted after new product \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive.log');
+
             } else {
                 $table_name = $wpdb->prefix . "bojett_import_worker";
                 $wpdb->query("DELETE FROM $table_name WHERE `name` = '$import_variable'");
-                error_log('1 ' . date('d.m.Y H:i:s') . " || " . $existcheck[1] . " - " . $import_variable . " closed and failed restarted after new product \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and failed restart -- Productarray number " . $i . " / " . $from . " / " . $to . " \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             }
         }
     }

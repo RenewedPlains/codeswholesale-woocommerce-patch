@@ -109,6 +109,7 @@ function create_plugin_database_tables( )
         $sql4 .= "  `to`  varchar(128)   NOT NULL, ";
         $sql4 .= "  `last_product`  varchar(128)   NOT NULL, ";
         $sql4 .= "  `last_update`  varchar(128)   NOT NULL, ";
+        $sql4 .= "  `cws_message`  varchar(128)   NOT NULL, ";
         $sql4 .= "  PRIMARY KEY (`id`) ";
         $sql4 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta($sql4);
@@ -899,6 +900,10 @@ function render_custom_link_page() {
                 var result = JSON.parse(jQuery(data).filter('.metaimport').html());
                 jQuery.each(result, function(importbatch) {
                     jQuery('.plugin-card:nth-child(' + i + ') .product_title').html(this.cws_game_title);
+                    jQuery('.plugin-card:nth-child(' + i + ') .product_message').html(this.cws_message);
+                    jQuery('.plugin-card:nth-child(' + i + ') .big_count').html(this.last_product);
+                    jQuery('.plugin-card:nth-child(' + i + ') .from_import').html(this.from_all);
+                    jQuery('.plugin-card:nth-child(' + i + ') .to_import').html(this.to_all);
                     jQuery('.plugin-card:nth-child(' + i + ') .product_price').html(this.cws_game_price + ' EUR');
                     jQuery('.plugin-card:nth-child(' + i + ') .timeago').html(this.cws_last_update);
                     i++;
