@@ -362,8 +362,10 @@ if($auto_updates == '1') {
         $filecontent = file_get_contents( 'php://input' );
         $decode_content = json_decode($filecontent);
         $updated_productid = $decode_content->products[0]->productId;
+        $updated_productname = $decode_content->products[0]->productName;
         $updated_productprice = $decode_content->products[0]->prices[1]->price;
         $updated_productstock = $decode_content->products[0]->quantity;
+        $timestamp = time();
         $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $updated_productid);
         if($existcheck[0] >= 1 ) {
             $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
@@ -372,18 +374,39 @@ if($auto_updates == '1') {
             if(substr($profit_margin_value, -1, 1) == 'a') {
                 $profit_margin_value = substr($profit_margin_value, 0, -1);
                 $setprice = ($updated_productprice * $get_currency_value) + $profit_margin_value;
+                $wpdb->insert($wpdb->prefix . 'bojett_import', array(
+                    'cws_id' => $updated_productid,
+                    'cws_game_title' => $updated_productname,
+                    'cws_game_price' => $updated_productprice,
+                    'cws_phpworker' => 'postback',
+                    'created_at' => $timestamp
+                ));
             } else {
                 $profit_margin_value = substr($profit_margin_value, 0, -1);
                 $cws_productprice_currency = $updated_productprice * $get_currency_value;
                 $setprice = $cws_productprice_currency * ($profit_margin_value / 100) + $cws_productprice_currency;
+                $wpdb->insert($wpdb->prefix . 'bojett_import', array(
+                    'cws_id' => $updated_productid,
+                    'cws_game_title' => $updated_productname,
+                    'cws_game_price' => $updated_productprice,
+                    'cws_phpworker' => 'postback',
+                    'created_at' => $timestamp
+                ));
             }
             update_post_meta($existcheck[1], '_regular_price', $setprice);
             update_post_meta($existcheck[1], '_price', $setprice);
             update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $updated_productprice);
             wc_update_product_stock($existcheck[1], $updated_productstock, 'set');
-            //error_log('1 ' . $existcheck[1] . " - updated \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+            error_log('1 ' . $filecontent . " - updated \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         } else {
-            //error_log('1 ' . $existcheck[1] . " - Produkt wurde nicht gefunden, somit wurde kein Update angewendet \n", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+            $wpdb->insert($wpdb->prefix . 'bojett_import', array(
+                'cws_id' => $updated_productid,
+                'cws_game_title' => $updated_productname,
+                'cws_game_price' => $updated_productprice,
+                'cws_phpworker' => 'postback',
+                'created_at' => $timestamp
+            ));
+            error_log('1 ' . $filecontent . " - Produkt wurde nicht gefunden, somit wurde kein Update angewendet \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         }
     }
     add_action('admin_post_nopriv_codeswholesale_notifications', 'check_product_updates');
@@ -880,7 +903,10 @@ function render_custom_link_page() {
     include_once('includes/importer-ui.php');
     echo '</div>';
     $import_worker = $wpdb->get_results('SELECT * FROM '.$wpdb->prefix.'bojett_import_worker');
-    if(count($import_worker) != 0) {
+    $auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
+
+    if(count($import_worker) != 0 || $auto_updates != 0) {
+        $ui_path = esc_url( plugins_url( 'includes/importer-ui.php?get_as_json=true', __FILE__ ) );
     ?>
 
         <script>
@@ -888,19 +914,23 @@ function render_custom_link_page() {
         setInterval(function() {
             var i = 1;
             jQuery.ajax({
-                url: "../wp-content/plugins/codeswholesale-woocommerce-patch/includes/importer-ui.php?get_as_json=true",
+                url: '<?php echo $ui_path; ?>',
             }).done(function( data ) {
                 var result = JSON.parse(jQuery(data).filter('.metaimport').html());
                 jQuery.each(result, function(importbatch) {
-                    jQuery('.plugin-card:nth-child(' + i + ') .product_title').html(this.cws_game_title);
-                    jQuery('.plugin-card:nth-child(' + i + ') .product_message').html(this.cws_message);
-                    jQuery('.plugin-card:nth-child(' + i + ') .big_count').html(this.last_product);
-                    jQuery('.plugin-card:nth-child(' + i + ') .from_import').html(this.from_all);
-                    jQuery('.plugin-card:nth-child(' + i + ') .to_import').html(this.to_all);
-                    jQuery('.plugin-card:nth-child(' + i + ') .product_price').html(this.cws_game_price + ' EUR');
-                    jQuery('.plugin-card:nth-child(' + i + ') .timeago').html(this.cws_last_update);
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .product_title').html(this.cws_game_title);
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .product_message').html(this.cws_message);
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .big_count').html(this.last_product);
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .from_import').html(this.from_all);
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .to_import').html(this.to_all);
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .product_price').html(this.cws_game_price + ' EUR');
+                    jQuery('.plugin-card.importer:nth-child(' + i + ') .timeago').html(this.cws_last_update);
                     i++;
                 });
+                jQuery('.plugin-card.postbackupdater .product_title').html(result.postback.cws_game_title);
+                jQuery('.plugin-card.postbackupdater .product_message').html(result.postback.cws_message);
+                jQuery('.plugin-card.postbackupdater .product_price').html(result.postback.cws_game_price + ' EUR');
+                jQuery('.plugin-card.postbackupdater .timeago').html(result.postback.cws_last_update);
             });
         }, 2500);
     });
