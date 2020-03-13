@@ -28,6 +28,7 @@ if($_GET['get_as_json'] == 'true') {
 
     }
     $this_updater = $wpdb->get_results('SELECT * FROM ' . $wpdb->prefix . 'bojett_import WHERE `cws_phpworker` = "postback" ORDER BY `created_at` DESC LIMIT 0, 1');
+
     foreach($this_updater as $the_updater) {
         $collector["postback"] = array();
         $collector["postback"]['cws_id'] = $the_updater->cws_id;
@@ -35,7 +36,6 @@ if($_GET['get_as_json'] == 'true') {
         $collector["postback"]['cws_game_title'] = $the_updater->cws_game_title;
         $collector["postback"]['cws_game_price'] = $the_updater->cws_game_price;
         $collector["postback"]['cws_last_update'] = convert_to_time_ago($the_updater->created_at);
-
     }
     echo '<div class="metaimport">';
     echo json_encode($collector);
@@ -53,7 +53,7 @@ if($_GET['get_as_json'] == 'true') {
             _e('Import is in progress.', 'codeswholesale_patch');
         }
         echo '<br /><br /><div class="wp-list-table widefat plugin-install">
-                <h2 class="screen-reader-text">Pluginliste</h2>	<div id="the-list">';
+                <h2 class="screen-reader-text">Pluginliste</h2>	<div>';
         foreach($import_worker as $worker) {
             $get_import_number = $wpdb->get_var('SELECT importnumber FROM `' . $wpdb->prefix . 'bojett_credentials`');
             $from_import_worker = $worker->from;
@@ -100,81 +100,82 @@ if($_GET['get_as_json'] == 'true') {
         echo '<br /><br /><h2>' . __('Importer Overview', 'codeswholesale_patch') . " (" . $get_worker . ")</h2>";
         $get_settings_import_worker = $wpdb->get_var('SELECT `phpworker` FROM `' . $wpdb->prefix .'bojett_credentials`');
         echo '<div class="wp-list-table widefat plugin-install">
-                <h2 class="screen-reader-text">Pluginliste</h2>	<div id="the-list">';
+                <h2 class="screen-reader-text">Pluginliste</h2>	<div>';
         for($i = 1; $i <= $get_settings_import_worker; $i++) {
             ?>
-                    <div class="plugin-card">
-                        <div class="plugin-card-top">
-                            <div class="column-name">
-                                <h3>
-                                    Import Worker #<?php echo $i; ?>
-                                </h3>
-                            </div>
-                            <div class="action-links">
-                                <ul class="plugin-action-buttons">
-                                    <li>
-                                        <a href="#" class="button disabled" aria-label="Aktiviere Akismet Anti-Spam"><?php _e('No import active', 'codeswholesale_patch'); ?></a>
-                                    </li>
-                                </ul>
-                            </div>
-                            <div class="column-description">
-                                <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
-                                <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
-                                <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
-                            </div>
-                        </div>
-                        <div class="plugin-card-bottom">
-                            <div class="column-updated">
-                                <strong><?php _e('Last Updated:'); ?></strong>
-                                <span class="timeago">- <?php _e('idle', 'codeswholesale_patch'); ?></span>
-                            </div>
-                            <div class="column-updated">
-                                <strong><?php _e('Import Products', 'codeswholesale_patch'); ?></strong> - <?php _e('idle', 'codeswholesale_patch'); ?>
-                            </div>
-                        </div>
+            <div class="plugin-card">
+                <div class="plugin-card-top">
+                    <div class="column-name">
+                        <h3>
+                            Import Worker #<?php echo $i; ?>
+                        </h3>
                     </div>
+                    <div class="action-links">
+                        <ul class="plugin-action-buttons">
+                            <li>
+                                <a href="#" class="button disabled" aria-label="Aktiviere Akismet Anti-Spam"><?php _e('No import active', 'codeswholesale_patch'); ?></a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="column-description">
+                        <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
+                        <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
+                        <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
+                    </div>
+                </div>
+                <div class="plugin-card-bottom">
+                    <div class="column-updated">
+                        <strong><?php _e('Last Updated:'); ?></strong>
+                        <span class="timeago">- <?php _e('idle', 'codeswholesale_patch'); ?></span>
+                    </div>
+                    <div class="column-updated">
+                        <strong><?php _e('Import Products', 'codeswholesale_patch'); ?></strong> - <?php _e('idle', 'codeswholesale_patch'); ?>
+                    </div>
+                </div>
+            </div>
             <?php
         }
         echo '</div></div>';
     }
     $auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
     if($auto_updates == 1) {
-    echo '<div style="display:inline-block">';
-    echo '<h2 style="display: inline-block; margin-top: 25px;">' . __( 'Postback Updater', 'codeswholesale_patch' ) . '</h2>';
-    echo '<p style="display: block; margin-top: 0px;">' . __( 'In the card below you will find the update information triggered by your Postback URL from CodesWholesale. ', 'codeswholesale_patch' ) . '</p>';
-    echo '</div>';
-    ?>
-    <div class="plugin-card postbackupdater">
-        <div class="plugin-card-top">
-            <div class="column-name">
-                <h3>
-                    Postback Updater
-                </h3>
+        echo '<div style="display:inline-block">';
+        echo '<h2 style="display: inline-block; margin-top: 25px;">' . __( 'Postback Updater', 'codeswholesale_patch' ) . '</h2>';
+        echo '<p style="display: block; margin-top: 0px;">' . __( 'In the card below you will find the update information triggered by your Postback URL from CodesWholesale. ', 'codeswholesale_patch' ) . '</p>';
+        echo '</div>';
+        ?>
+        <div class="clear"></div>
+        <div class="plugin-card postbackupdater" style="margin-left: 0px;">
+            <div class="plugin-card-top">
+                <div class="column-name">
+                    <h3>
+                        Postback Updater
+                    </h3>
+                </div>
+                <div class="action-links">
+                    <ul class="plugin-action-buttons">
+                        <li>
+                            <span class="dashicons dashicons-welcome-write-blog"></span>
+                            <span class="big_count" style="font-size: 42px;font-weight: bold;">-</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="column-description">
+                    <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
+                    <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
+                    <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
+                </div>
             </div>
-            <div class="action-links">
-                <ul class="plugin-action-buttons">
-                    <li>
-                        <span class="dashicons dashicons-welcome-write-blog"></span>
-                        <span class="big_count" style="font-size: 42px;font-weight: bold;">-</span>
-                    </li>
-                </ul>
-            </div>
-            <div class="column-description">
-                <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
-                <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
-                <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
+            <div class="plugin-card-bottom">
+                <div class="column-updated">
+                    <strong><?php _e('Last Updated:'); ?></strong>
+                    <span class="timeago"><?php echo meks_convert_to_time_ago($worker->last_update); ?></span>
+                </div>
+                <div class="column-updated">
+                    <strong><?php _e('Import Products', 'codeswholesale_patch'); ?></strong> <span class="from_import"><?php echo $from_import_worker; ?></span> - <span class="to_import"><?php echo $to_import_worker; ?></span> von <?php echo $get_import_number; ?>
+                </div>
             </div>
         </div>
-        <div class="plugin-card-bottom">
-            <div class="column-updated">
-                <strong><?php _e('Last Updated:'); ?></strong>
-                <span class="timeago"><?php echo meks_convert_to_time_ago($worker->last_update); ?></span>
-            </div>
-            <div class="column-updated">
-                <strong><?php _e('Import Products', 'codeswholesale_patch'); ?></strong> <span class="from_import"><?php echo $from_import_worker; ?></span> - <span class="to_import"><?php echo $to_import_worker; ?></span> von <?php echo $get_import_number; ?>
-            </div>
-        </div>
-    </div>
-<?php
+        <?php
     }
 }
