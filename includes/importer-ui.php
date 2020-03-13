@@ -161,18 +161,15 @@ if($_GET['get_as_json'] == 'true') {
                     </ul>
                 </div>
                 <div class="column-description">
-                    <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Idle - importer not active</cite></span></p>
-                    <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Idle - importer not active</cite></span></p>
-                    <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Idle - importer not active</cite></span></p>
+                    <p><strong><?php _e('Import Title', 'codeswholesale_patch'); ?></strong> <span class="product_title"><cite>Waiting for update...</cite></span></p>
+                    <p><strong><?php _e('Import Price', 'codeswholesale_patch'); ?></strong> <span class="product_price"><cite>Waiting for update...</cite></span></p>
+                    <p><strong><?php _e('Status', 'codeswholesale_patch'); ?></strong> <span class="product_message"><cite>Waiting for update...</cite></span></p>
                 </div>
             </div>
             <div class="plugin-card-bottom">
                 <div class="column-updated">
                     <strong><?php _e('Last Updated:'); ?></strong>
                     <span class="timeago"><?php echo meks_convert_to_time_ago($worker->last_update); ?></span>
-                </div>
-                <div class="column-updated">
-                    <strong><?php _e('Import Products', 'codeswholesale_patch'); ?></strong> <span class="from_import"><?php echo $from_import_worker; ?></span> - <span class="to_import"><?php echo $to_import_worker; ?></span> von <?php echo $get_import_number; ?>
                 </div>
             </div>
         </div>
