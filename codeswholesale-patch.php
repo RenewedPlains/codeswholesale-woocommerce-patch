@@ -15,6 +15,8 @@ ob_start( );
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
 require_once( ABSPATH . 'wp-load.php' );
 require_once( ABSPATH . 'wp-config.php' );
+require_once( 'vendor/autoload.php' );
+
 global $wpdb;
 
 /*
@@ -236,6 +238,23 @@ function change_icon_style_end( $buffer ) {
     return str_replace( 'img/bojett_icon_128x128.png"','img/bojett_icon_128x128.png" style="max-width: 24px;margin-top:-3px;"', $buffer );
 }
 
+
+function guzzle_get( $uri, $bearertoken = '' ) {
+    $client = new GuzzleHttp\Client( );
+    $headers = [
+        'Authorization' => 'Bearer ' . $bearertoken,
+        'Accept'        => 'application/json',
+    ];
+    if( $bearertoken != '' ) {
+        $response = $client->request('GET', $uri, ['headers' => $headers, 'verify' => false]);
+    } else {
+        $response = $client->get( $uri );
+    }
+    if ( $response->getBody( ) ) {
+        return $response->getBody( );
+    }
+}
+
 /*
  * Define and run Cronjob for refreshing the bearer in time
  */
@@ -263,13 +282,7 @@ function run_cws_cron_script( ) {
         $client_id = $wpdb->get_var( 'SELECT cws_client_id FROM ' . $options_name );
         $client_secret = $wpdb->get_var( 'SELECT cws_client_secret FROM ' . $options_name );
         // Get new bearer from API credentials
-        $chc = curl_init( 'https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret );
-        curl_setopt( $chc, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json' ) );
-        curl_setopt( $chc, CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $chc, CURLOPT_SSL_VERIFYPEER, false );
-        curl_setopt( $chc, CURLOPT_FOLLOWLOCATION, 1 );
-        $result = curl_exec( $chc );
-        curl_close( $chc );
+        $result = guzzle_get('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret );
         $new_bearer = json_decode( $result, true )['access_token'];
         $new_bearer_expires = json_decode( $result, true )['expires_in'];
         $new_db_expires_in = $current_timestamp + $new_bearer_expires;
@@ -281,6 +294,8 @@ function run_cws_cron_script( ) {
         ) );
     }
 }
+
+
 
 function check_update_bearer_token( )
 {
@@ -299,13 +314,7 @@ function pull_currencies() {
     $currency_rates = 'bojett_currency_rates';
     $bojett_currency_rates_table = $wpdb->prefix . "$currency_rates";
     $wpdb->query( "TRUNCATE TABLE " .$wpdb->prefix . "bojett_currency_rates" );
-    $chc = curl_init( 'https://api.exchangeratesapi.io/latest?base=EUR' );
-    curl_setopt( $chc, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json' ) );
-    curl_setopt( $chc, CURLOPT_RETURNTRANSFER, true );
-    curl_setopt( $chc, CURLOPT_SSL_VERIFYPEER, false );
-    curl_setopt( $chc, CURLOPT_FOLLOWLOCATION, 1 );
-    $result = curl_exec( $chc );
-    curl_close( $chc );
+    $result = guzzle_get('https://api.exchangeratesapi.io/latest?base=EUR' );
     $exchange_rates_eur = json_decode( $result, true )['rates'];
     $current_timestamp = time();
     $wpdb->insert( $bojett_currency_rates_table, array(
@@ -724,18 +733,7 @@ if($_GET['importstart'] == 'true' && $_POST['importstart']) {
     $table_name = $wpdb->prefix . "bojett_import_worker";
     $wpdb->query("TRUNCATE TABLE $table_name");
     $token = $wpdb->get_var('SELECT cws_access_token FROM '.$wpdb->prefix.'bojett_auth_token');
-    $authorization = "Authorization: Bearer " . $token;
-    $ch = curl_init('https://api.codeswholesale.com/v2/products');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-    if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-    }
-    $result = curl_exec($ch);
-    curl_close($ch);
-
+    $result = guzzle_get('https://api.codeswholesale.com/v2/products', $token );
     $handle = fopen (plugin_dir_path( __FILE__ ) . '/includes/current_import.txt', 'w') or die("Unable to open file!");
     fwrite ($handle, $result);
     fclose ($handle);

@@ -9,6 +9,7 @@ if($_GET['importstart'] == 'true') {
     ini_set('memory_limit', '512M');
 }
 
+
 function import_cws_product( $from, $to, $import_variable )
 {
     set_time_limit(240);
@@ -16,7 +17,26 @@ function import_cws_product( $from, $to, $import_variable )
     include_once(ABSPATH . 'wp-admin/includes/plugin.php');
     require_once(ABSPATH . 'wp-load.php');
     require_once(ABSPATH . 'wp-config.php');
+    include_once(ABSPATH . 'wp-content/plugins/' . dirname(plugin_basename(__FILE__)) . '/vendor/autoload.php' );
     global $wpdb;
+    if (!function_exists('guzzle_get')) {
+        function guzzle_get($uri, $bearertoken = '')
+        {
+            $client = new GuzzleHttp\Client( );
+            $headers = [
+                'Authorization' => 'Bearer ' . $bearertoken,
+                'Accept' => 'application/json',
+            ];
+            if ($bearertoken != '') {
+                $response = $client->request('GET', $uri, ['headers' => $headers, 'verify' => false]);
+            } else {
+                $response = $client->get($uri);
+            }
+            if ($response->getBody()) {
+                return $response->getBody();
+            }
+        }
+    }
 
     if (!function_exists('check_bearer_valid'))  {
         function check_bearer_valid() {
@@ -48,14 +68,7 @@ function import_cws_product( $from, $to, $import_variable )
                     $options_name = $wpdb->prefix . "bojett_credentials";
                     $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
                     $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
-
-                    $ch = curl_init('https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret); // Initialise cURL
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json')); // Inject the token into the header
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-                    $result = curl_exec($ch); // Execute the cURL statement
-                    curl_close($ch); // Close the cURL connection*/
+                    $result = guzzle_get( 'https://api.codeswholesale.com/oauth/token?grant_type=client_credentials&client_id=' . $client_id . '&client_secret=' . $client_secret );
                     $new_bearer = json_decode($result, true)['access_token'];
                     $new_bearer_expires = json_decode($result, true)['expires_in'];
                     $new_db_expires_in = $current_timestamp + $new_bearer_expires;
@@ -95,21 +108,10 @@ function import_cws_product( $from, $to, $import_variable )
             $table_name = $wpdb->prefix . "bojett_auth_token";
             $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
             $db_token = $current_access_bearer_expire;
-            $ch = curl_init( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description' );
-            $authorization = "Authorization: Bearer " . $db_token;
-            curl_setopt( $ch, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json', $authorization ) );
-            curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-            curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1 );
-            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-            }
-            $result = curl_exec($ch);
+            $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description', $db_token );
             $payload_array = json_decode($result, true)['factSheets'];
             $settings_table = $wpdb->prefix . "bojett_credentials";
             $get_defined_import_language = $wpdb->get_var("SELECT description_language FROM $settings_table");
-            curl_close($ch);
-
             if (is_array($payload_array)) {
                 foreach ($payload_array as $product_description) {
                     if ($product_description['territory'] == $get_defined_import_language && $product_description['description'] != '') {
@@ -154,18 +156,8 @@ function import_cws_product( $from, $to, $import_variable )
         function checktitle($fix_title, $productId, $db_token)
         {
             if ($fix_title == '') {
-                $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId); // Initialise cURL
-                $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-                if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-                }
-                $result = curl_exec($ch); // Execute the cURL statement
+                $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId, $db_token );
                 $thetitle = json_decode($result, true)['name'];
-                curl_close($ch); // Close the cURL connection
                 return $thetitle;
             }
         }
@@ -178,21 +170,9 @@ function import_cws_product( $from, $to, $import_variable )
             $table_name = $wpdb->prefix . "bojett_auth_token";
             $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
             $db_token = $current_access_bearer_expire;
-
-            $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId); // Initialise cURL
-            $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-            }
-            $result = curl_exec($ch); // Execute the cURL statement
+            $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId, $db_token );
             $thetitle = json_decode($result, true)['name'];
-            curl_close($ch); // Close the cURL connection
             return $thetitle;
-
         }
     }
 
@@ -204,18 +184,8 @@ function import_cws_product( $from, $to, $import_variable )
             $table_name = $wpdb->prefix . "bojett_auth_token";
             $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
             $db_token = $current_access_bearer_expire;
-            $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
-            $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-            }
-            $result = curl_exec($ch); // Execute the cURL statement
+            $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description', $db_token );
             $payload_array = explode(', ', json_decode($result, true)['category']);
-            curl_close($ch); // Close the cURL connection
             return $payload_array;
         }
     }
@@ -229,17 +199,7 @@ function import_cws_product( $from, $to, $import_variable )
             $current_access_bearer = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
             $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
             $db_token = $current_access_bearer_expire;
-
-            $ch = curl_init('https://api.codeswholesale.com/v2/products/' . $productId . '/description'); // Initialise cURL
-            $authorization = "Authorization: Bearer " . $db_token; // Prepare the authorisation token
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $authorization)); // Inject the token into the header
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // This will follow any redirects
-            if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-            }
-            $result = curl_exec($ch); // Execute the cURL statement
+            $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description', $db_token );
             $payload_array = json_decode($result, true)['photos'];
             //var_dump($payload_array);
             $wpdb->update(
@@ -269,7 +229,6 @@ function import_cws_product( $from, $to, $import_variable )
                     array_push($photo_array, array('url' => $url, 'content_type' => curl_getinfo($ch5, CURLINFO_CONTENT_TYPE)));
                     curl_close($ch5); // Close the cURL connection
                 }
-                curl_close($ch); // Close the cURL connection
 
                 return $photo_array;
             } else {
