@@ -246,7 +246,7 @@ function guzzle_get( $uri, $bearertoken = '' ) {
         'Accept'        => 'application/json',
     ];
     if( $bearertoken != '' ) {
-        $response = $client->request('GET', $uri, ['headers' => $headers, 'verify' => false]);
+        $response = $client->request('GET', $uri, ['headers' => $headers, 'verify' => false, 'http_errors' => false]);
     } else {
         $response = $client->get( $uri );
     }
