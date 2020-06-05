@@ -15,7 +15,7 @@ $client_id = $wpdb->get_var('SELECT cws_client_id FROM ' . $options_name);
 $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
 $db_token = $access_bearer;
 $db_expires_in = $access_expires_in;
-$current_timestamp = time();
+$current_timestamp = current_time( 'timestamp' );
 
 if ($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
     if ($client_id == NULL || $client_secret == NULL) {
