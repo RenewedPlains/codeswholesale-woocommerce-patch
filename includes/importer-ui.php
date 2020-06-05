@@ -52,7 +52,7 @@ if($_GET['get_as_json'] == 'true') {
         } else {
             _e('Import is in progress.', 'codeswholesale_patch');
         }
-        echo '<br /><br /><div class="wp-list-table widefat plugin-install">
+        echo '<br /><br /><div class="wp-list-table widefat plugin-install" style="display:table">
                 <h2 class="screen-reader-text">Pluginliste</h2>	<div>';
         foreach($import_worker as $worker) {
             $get_import_number = $wpdb->get_var('SELECT importnumber FROM `' . $wpdb->prefix . 'bojett_credentials`');
@@ -70,7 +70,7 @@ if($_GET['get_as_json'] == 'true') {
                     <div class="action-links">
                         <ul class="plugin-action-buttons">
                             <li>
-                                <span class="dashicons dashicons-welcome-write-blog"></span>
+                                <!--<span class="dashicons dashicons-welcome-write-blog"></span>-->
                                 <span class="big_count" style="font-size: 42px;font-weight: bold;">-</span>
                             </li>
                         </ul>
@@ -99,7 +99,7 @@ if($_GET['get_as_json'] == 'true') {
         $get_worker = $wpdb->get_var('SELECT phpworker FROM ' . $wpdb->prefix . 'bojett_credentials');
         echo '<br /><br /><h2>' . __('Importer Overview', 'codeswholesale_patch') . " (" . $get_worker . ")</h2>";
         $get_settings_import_worker = $wpdb->get_var('SELECT `phpworker` FROM `' . $wpdb->prefix .'bojett_credentials`');
-        echo '<div class="wp-list-table widefat plugin-install">
+        echo '<div class="wp-list-table widefat plugin-install" style="display:table">
                 <h2 class="screen-reader-text">Pluginliste</h2>	<div>';
         for($i = 1; $i <= $get_settings_import_worker; $i++) {
             ?>
@@ -155,7 +155,7 @@ if($_GET['get_as_json'] == 'true') {
                 <div class="action-links">
                     <ul class="plugin-action-buttons">
                         <li>
-                            <span class="dashicons dashicons-welcome-write-blog"></span>
+                            <!--<span class="dashicons dashicons-welcome-write-blog"></span>-->
                             <span class="big_count" style="font-size: 42px;font-weight: bold;">-</span>
                         </li>
                     </ul>
