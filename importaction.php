@@ -22,18 +22,30 @@ function import_cws_product( $from, $to, $import_variable )
     if (!function_exists('guzzle_get')) {
         function guzzle_get($uri, $bearertoken = '')
         {
-            $client = new GuzzleHttp\Client( );
-            $headers = [
-                'Authorization' => 'Bearer ' . $bearertoken,
-                'Accept' => 'application/json',
-            ];
-            if ($bearertoken != '') {
-                $response = $client->request('GET', $uri, ['headers' => $headers, 'verify' => false]);
-            } else {
-                $response = $client->get($uri);
-            }
-            if ($response->getBody()) {
-                return $response->getBody();
+            try {
+                $client = new GuzzleHttp\Client( ['defaults' => [ 'exceptions' => false ] ] );
+                $headers = [
+                    'Authorization' => 'Bearer ' . $bearertoken,
+                    'Accept' => 'application/json',
+                ];
+                if ($bearertoken != '') {
+                    $response = $client->request('GET', $uri, ['headers' => $headers, 'verify' => false, 'http_errors' => false]);
+                } else {
+                    $response = $client->get($uri);
+                }
+                if($response->getStatusCode() == 404) {
+                    error_log('hehehhheheheheheheheheh');
+
+                } else {
+                    error_log('hohoohohohoh');
+
+                    if ($response->getBody()) {
+                        return $response->getBody();
+                    }
+                }
+            } catch (GuzzleHttp\Exception\RequestException $e) {
+                echo 'Caught response: ' . $e->getResponse()->getStatusCode();
+                error_log('1 ' . date('d.m.Y H:i:s') . " ||  - GUZZLE: Bearer is expiring! :( s  \n", 3, 'wp-content/plugins/' . dirname(plugin_basename(__FILE__)) . '/includes/passive_log.txt');
             }
         }
     }
@@ -43,8 +55,8 @@ function import_cws_product( $from, $to, $import_variable )
             global $wpdb, $import_variable;
             $table_name = $wpdb->prefix . "bojett_auth_token";
             $current_access_bearer_expire = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
-            if ($current_access_bearer_expire - 120 <= time()) {
-                $expire_diff = $current_access_bearer_expire - time();
+            if ($current_access_bearer_expire - 120 <= current_time('timestamp')) {
+                $expire_diff = $current_access_bearer_expire - current_time('timestamp');
                 error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . ": Bearer is expiring! :( " . $expire_diff . "s  \n", 3, 'wp-content/plugins/' . dirname(plugin_basename(__FILE__)) . '/includes/passive_log.txt');
                 sleep($expire_diff + 10);
                 $table_name = $wpdb->prefix . "bojett_auth_token";
@@ -55,7 +67,7 @@ function import_cws_product( $from, $to, $import_variable )
                 $client_secret = $wpdb->get_var('SELECT cws_client_secret FROM ' . $options_name);
                 $db_token = $access_bearer;
                 $db_expires_in = $access_expires_in;
-                $current_timestamp = time();
+                $current_timestamp = current_time('timestamp');
 
                 if ($db_expires_in > $current_timestamp && $db_expires_in !== NULL && $access_bearer !== NULL) {
                     if ($client_id == NULL || $client_secret == NULL) {
@@ -88,7 +100,7 @@ function import_cws_product( $from, $to, $import_variable )
     $wpdb->update(
         $wpdb->prefix . 'bojett_import_worker',
         array(
-            'last_update' => time(),
+            'last_update' => current_time('timestamp'),
             'from' => $from,
             'to' => $to
         ),
@@ -127,7 +139,7 @@ function import_cws_product( $from, $to, $import_variable )
         function update_worker($gameid, $gametitle, $gameprice, $importworker, $message)
         {
             global $wpdb;
-            $timestamp = time();
+            $timestamp = current_time('timestamp');
             if($gametitle != false) {
                 $wpdb->insert($wpdb->prefix . 'bojett_import', array(
                     'cws_id' => $gameid,
@@ -205,7 +217,7 @@ function import_cws_product( $from, $to, $import_variable )
             $wpdb->update(
                 $wpdb->prefix . 'bojett_import_worker',
                 array(
-                    'last_update' => time()
+                    'last_update' => current_time('timestamp')
                 ),
                 array('name' => $import_variable),
                 array(
@@ -284,7 +296,7 @@ function import_cws_product( $from, $to, $import_variable )
             $wpdb->update(
                 $wpdb->prefix . 'bojett_import_worker',
                 array(
-                    'last_update' => time()
+                    'last_update' => current_time('timestamp')
                 ),
                 array('name' => $import_variable),
                 array(
@@ -454,7 +466,7 @@ function import_cws_product( $from, $to, $import_variable )
             $wpdb->prefix.'bojett_import_worker',
             array(
                 'last_product' => $i,
-                'last_update' => time()
+                'last_update' => current_time('timestamp')
             ),
             array( 'name' => $import_variable ),
             array(
@@ -468,7 +480,7 @@ function import_cws_product( $from, $to, $import_variable )
         $from = $wpdb->get_var("SELECT `from` FROM $settings_table WHERE `name` = '$import_variable'");
         $to = $wpdb->get_var("SELECT `to` FROM $settings_table WHERE `name` = '$import_variable'");
         if ($i == $to - 1) {
-            $timestamp = time();
+            $timestamp = current_time('timestamp');
             update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Import worker was completed. Start new import batch", "codeswholesale_patch"));
             $table_name = $wpdb->prefix . "bojett_import_worker";
             wp_clear_scheduled_hook($import_variable, array($from, $to, $import_variable));
@@ -482,7 +494,7 @@ function import_cws_product( $from, $to, $import_variable )
                 array(
                     'from' => $from_new,
                     'to' => $to_new,
-                    'last_update' => time()
+                    'last_update' => current_time('timestamp')
                 ),
                 array('name' => $import_variable),
                 array(
@@ -504,7 +516,7 @@ function import_cws_product( $from, $to, $import_variable )
             error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " has returned and should be executed now \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         }
         continue;
-    }
+    } else {
     if ($productcategories[0] != "") {
         $tager = [];
         update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Product categories are collected and applied", "codeswholesale_patch"));
@@ -629,7 +641,7 @@ function import_cws_product( $from, $to, $import_variable )
 
     global $timestamp_start;
 
-    $importtime[$i] = time();
+    $importtime[$i] = current_time('timestamp');
     $stamp = date('d.m.Y - H:i:s', $importtime[$i]);
     $twiggle = $i - 1;
     $time_for_product = $importtime[$i] - $importtime[$twiggle];
@@ -641,7 +653,7 @@ function import_cws_product( $from, $to, $import_variable )
             $wpdb->prefix . 'bojett_import_worker',
             array(
                 'last_product' => $i,
-                'last_update' => time()
+                'last_update' => current_time('timestamp')
             ),
             array('name' => $import_variable),
             array(
@@ -652,7 +664,7 @@ function import_cws_product( $from, $to, $import_variable )
         );
         if($i == $to - 1) {
             update_worker($cws_productid, false, $cws_productprice, $import_variable, _("Import worker was completed. Start new import batch", "codeswholesale_patch"));
-            $timestamp = time();
+            $timestamp = current_time('timestamp');
             $table_name = $wpdb->prefix . "bojett_import_worker";
             wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );
             $get_import_state = $wpdb->get_var('SELECT last_updated FROM ' . $wpdb->prefix . 'bojett_credentials');
@@ -665,7 +677,7 @@ function import_cws_product( $from, $to, $import_variable )
                     array(
                         'from' => $from_new,
                         'to' => $to_new,
-                        'last_update' => time()
+                        'last_update' => current_time('timestamp')
                     ),
                     array( 'name' => $import_variable ),
                     array(
@@ -686,5 +698,6 @@ function import_cws_product( $from, $to, $import_variable )
                 error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . " closed and failed restart -- Productarray number " . $i . " / " . $from . " / " . $to . " \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
             }
         }
+    }
     }
 }
