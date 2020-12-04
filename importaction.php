@@ -140,7 +140,13 @@ function import_cws_product( $from, $to, $import_variable )
         {
             global $wpdb;
             $timestamp = current_time('timestamp');
+            if($gameprice === '') {
+                $gameprice = '0';
+            }
             if($gametitle != false) {
+                if($gameprice == '') {
+                    $gameprice = '0';
+                }
                 $wpdb->insert($wpdb->prefix . 'bojett_import', array(
                     'cws_id' => $gameid,
                     'cws_game_title' => $gametitle,
@@ -432,7 +438,7 @@ function import_cws_product( $from, $to, $import_variable )
     $productdescription = get_single_product_description($cws_productid);
     $productcategories = get_single_product_categories($cws_productid);
     $productphotos = get_single_product_screenshots($cws_productid);
-    $cws_productprice = json_decode($result, true)['items'][$i]['prices'][2]['value'];
+    $cws_productprice = json_decode($result, true)['items'][$i]['prices'][0]['value'];
     $cws_quantity = json_decode($result, true)['items'][$i]['quantity'];
     $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $cws_productid);
     update_worker($cws_productid, $producttitle, $cws_productprice, $import_variable, __("Product data are read in.", "codeswholesale_patch"));
