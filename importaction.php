@@ -58,7 +58,9 @@ function import_cws_product( $from, $to, $import_variable )
             if ($current_access_bearer_expire - 120 <= current_time('timestamp')) {
                 $expire_diff = $current_access_bearer_expire - current_time('timestamp');
                 error_log('1 ' . date('d.m.Y H:i:s') . " ||  - " . $import_variable . ": Bearer is expiring! :( " . $expire_diff . "s  \n", 3, 'wp-content/plugins/' . dirname(plugin_basename(__FILE__)) . '/includes/passive_log.txt');
-                sleep($expire_diff + 10);
+                if(($expire_diff + 10) >= 0){
+                    sleep($expire_diff + 10);
+                }
                 $table_name = $wpdb->prefix . "bojett_auth_token";
                 $options_name = $wpdb->prefix . "bojett_credentials";
                 $access_bearer = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
@@ -669,7 +671,7 @@ function import_cws_product( $from, $to, $import_variable )
             array('%s')
         );
         if($i == $to - 1) {
-            update_worker($cws_productid, false, $cws_productprice, $import_variable, _("Import worker was completed. Start new import batch", "codeswholesale_patch"));
+            update_worker($cws_productid, false, $cws_productprice, $import_variable, __("Import worker was completed. Start new import batch", "codeswholesale_patch"));
             $timestamp = current_time('timestamp');
             $table_name = $wpdb->prefix . "bojett_import_worker";
             wp_clear_scheduled_hook( $import_variable, array( $from, $to, $import_variable ) );

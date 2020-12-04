@@ -63,7 +63,7 @@ if($_GET['get_as_json'] == 'true') {
                 <div class="plugin-card-top">
                     <div class="column-name">
                         <h3>
-                            <?php $worker_number = substr($worker->name, -1, 1); ?>
+                            <?php if(substr($worker->name, -1, 1)) { $worker_number = substr($worker->name, -1, 1); } else { $worker_number = 0; } ?>
                             Import Worker #<?php echo $worker_number + 1; ?>
                         </h3>
                     </div>
