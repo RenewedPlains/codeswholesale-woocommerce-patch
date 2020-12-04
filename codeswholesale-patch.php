@@ -67,7 +67,7 @@ function create_plugin_database_tables( )
         $sql .= "  `placeholder_image`  varchar(128)  NOT NULL DEFAULT '" . $placeholder_image . "', ";
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (`id`) ";
-        $sql .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        $sql .= ") ENGINE=INNODB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta( $sql );
     }
     $token = 'bojett_auth_token';
@@ -79,7 +79,7 @@ function create_plugin_database_tables( )
         $sql2 .= "  `cws_expires_in`  varchar(128)  DEFAULT NULL, ";
         $sql2 .= "  `cws_access_token`  varchar(128) DEFAULT NULL, ";
         $sql2 .= "  PRIMARY KEY (`id`) ";
-        $sql2 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        $sql2 .= ") ENGINE=INNODB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta( $sql2 );
     }
     $import = 'bojett_import';
@@ -89,12 +89,12 @@ function create_plugin_database_tables( )
         $sql3 = "CREATE TABLE `". $bojett_import_table . "` ( ";
         $sql3 .= "  `id`  int(11)   NOT NULL auto_increment, ";
         $sql3 .= "  `cws_id`  varchar(128)   NOT NULL, ";
-        $sql3 .= "  `cws_game_title`  varchar(128)   NOT NULL, ";
+        $sql3 .= "  `cws_game_title`  varchar(128)   NULL, ";
         $sql3 .= "  `cws_game_price`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `cws_phpworker`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `created_at`  varchar(128)   NOT NULL, ";
         $sql3 .= "  PRIMARY KEY (`id`) ";
-        $sql3 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        $sql3 .= ") ENGINE=INNODB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta( $sql3 );
     }
 
@@ -111,7 +111,7 @@ function create_plugin_database_tables( )
         $sql4 .= "  `last_update`  varchar(128)   NOT NULL, ";
         $sql4 .= "  `cws_message`  varchar(128)   NOT NULL, ";
         $sql4 .= "  PRIMARY KEY (`id`) ";
-        $sql4 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        $sql4 .= ") ENGINE=INNODB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta( $sql4 );
     }
 
@@ -126,7 +126,7 @@ function create_plugin_database_tables( )
         $sql5 .= "  `selected`  varchar(128)  NOT NULL DEFAULT '0', ";
         $sql5 .= "  `last_update`  varchar(128)   NOT NULL, ";
         $sql5 .= "  PRIMARY KEY (`id`) ";
-        $sql5 .= ") ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
+        $sql5 .= ") ENGINE=INNODB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
         dbDelta( $sql5 );
     }
 
@@ -376,6 +376,7 @@ if($auto_updates == '1') {
         $updated_productstock = $decode_content->products[0]->quantity;
         $timestamp = current_time( 'timestamp' );
         $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $updated_productid);
+        error_log("PRODUCT UPDATE: ((" . $existcheck[1] . " ))  ". json_encode($decode_content->products[0]) . "<br>", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         if($existcheck[0] >= 1 ) {
             $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
             $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
@@ -405,8 +406,8 @@ if($auto_updates == '1') {
             update_post_meta($existcheck[1], '_regular_price', $setprice);
             update_post_meta($existcheck[1], '_price', $setprice);
             update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $updated_productprice);
-            wc_update_product_stock($existcheck[1], $updated_productstock, 'set');
-            error_log('1 ' . $filecontent . " - updated \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+            update_post_meta($existcheck[1], '_stock', $updated_productstock);
+            //error_log('1 ' . $filecontent . " - updated \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         } else {
             $wpdb->insert($wpdb->prefix . 'bojett_import', array(
                 'cws_id' => $updated_productid,
@@ -415,7 +416,7 @@ if($auto_updates == '1') {
                 'cws_phpworker' => 'postback',
                 'created_at' => $timestamp
             ));
-            error_log('1 ' . $filecontent . " - Produkt wurde nicht gefunden, somit wurde kein Update angewendet \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+            //error_log('1 ' . $filecontent . " - Produkt wurde nicht gefunden, somit wurde kein Update angewendet \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         }
     }
     add_action('admin_post_nopriv_codeswholesale_notifications', 'check_product_updates');
