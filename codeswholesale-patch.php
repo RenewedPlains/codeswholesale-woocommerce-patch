@@ -372,7 +372,7 @@ if($auto_updates == '1') {
         $decode_content = json_decode($filecontent);
         $updated_productid = $decode_content->products[0]->productId;
         $updated_productname = $decode_content->products[0]->productName;
-        $updated_productprice = $decode_content->products[0]->prices[1]->price;
+        $updated_productprice = $decode_content->products[0]->prices[0]->price;
         $updated_productstock = $decode_content->products[0]->quantity;
         $timestamp = current_time( 'timestamp' );
         $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $updated_productid);
@@ -761,7 +761,7 @@ if($get_php_worker == '1') {
             $to = $get_import_to;
             $args = array($from, $to, $import_variable);
             wp_clear_scheduled_hook( $import_variable, $args );
-            wp_schedule_single_event( current_time('timestamp') + 300, 'import_batch', $args );
+            wp_schedule_single_event( time( ) + 60, 'import_batch', $args );
         }
     }
     add_action( 'import_batch', 'import_cws_product', 1, 3 );
@@ -784,17 +784,17 @@ if($get_php_worker == '1') {
                     'from' => $import_from,
                     'to' => $import_to,
                     'last_product' => "0",
-                    'last_update' => current_time( 'timestamp' ),
+                    'last_update' => time(),
                 ));
 
                 $get_import_from = $wpdb->get_var('SELECT `from` FROM '.$wpdb->prefix.'bojett_import_worker WHERE `name` = "' . $iteratorfun .'"');
                 $get_import_to = $wpdb->get_var('SELECT `to` FROM '.$wpdb->prefix.'bojett_import_worker WHERE `name` = "' . $iteratorfun .'"');
-                $timestamp = current_time( 'timestamp' );
+                $timestamp = time();
                 $from = $get_import_from;
                 $to = $get_import_to;
                 $args = array($from, $to, $import_variable);
                 wp_clear_scheduled_hook( $import_variable, $args );
-                wp_schedule_single_event($timestamp, 'import_batch_' . $i, $args);
+                wp_schedule_single_event($timestamp + 60, 'import_batch_' . $i, $args);
             }
         };
         add_action( 'import_batch_' . $i, 'import_cws_product', 1, 3 );
