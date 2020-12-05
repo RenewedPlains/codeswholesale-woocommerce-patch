@@ -28,6 +28,7 @@ function load_bojett_translations( )
 }
 add_action( 'init', 'load_bojett_translations' );
 
+
 /*
  * Create the required tables for the plugin by activation of the plugin.
  */
@@ -65,6 +66,7 @@ function create_plugin_database_tables( )
         $sql .= "  `product_currency`  varchar(128)  NOT NULL DEFAULT 'EUR', ";
         $sql .= "  `productarray_id`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  `placeholder_image`  varchar(128)  NOT NULL DEFAULT '" . $placeholder_image . "', ";
+        $sql .= "  `postback_creator`  int(13)  DEFAULT NULL, ";
         $sql .= "  `last_updated`  varchar(128)   DEFAULT NULL, ";
         $sql .= "  PRIMARY KEY (`id`) ";
         $sql .= ") ENGINE=INNODB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ; ";
@@ -89,7 +91,7 @@ function create_plugin_database_tables( )
         $sql3 = "CREATE TABLE `". $bojett_import_table . "` ( ";
         $sql3 .= "  `id`  int(11)   NOT NULL auto_increment, ";
         $sql3 .= "  `cws_id`  varchar(128)   NOT NULL, ";
-        $sql3 .= "  `cws_game_title`  varchar(128)   NULL, ";
+        $sql3 .= "  `cws_game_title`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `cws_game_price`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `cws_phpworker`  varchar(128)   NOT NULL, ";
         $sql3 .= "  `created_at`  varchar(128)   NOT NULL, ";
@@ -220,6 +222,14 @@ function add_admin_menu_patch( )
     );
     add_submenu_page(
         'cws-bojett-patch',
+        __( 'Postback log', 'codeswholesale_patch' ),
+        __( 'Postback log', 'codeswholesale_patch' ),
+        'manage_options',
+        'cws-bojett-postback-log',
+        'bojett_postback_log'
+    );
+    add_submenu_page(
+        'cws-bojett-patch',
         __( 'Settings', 'codeswholesale_patch' ),
         __( 'Settings', 'codeswholesale_patch' ),
         'manage_options',
@@ -238,6 +248,11 @@ function change_icon_style_end( $buffer ) {
     return str_replace( 'img/bojett_icon_128x128.png"','img/bojett_icon_128x128.png" style="max-width: 24px;margin-top:-3px;"', $buffer );
 }
 
+function bojett_postback_log()
+{
+    global $table_prefix, $wpdb;
+
+}
 
 function guzzle_get( $uri, $bearertoken = '' ) {
     $client = new GuzzleHttp\Client( );
@@ -363,6 +378,8 @@ if( !function_exists( 'get_wc_products_where_custom_field_is_set' ) )
         }
     }
 }
+
+
 $auto_updates = $wpdb->get_var('SELECT auto_updates FROM ' . $wpdb->prefix . 'bojett_credentials');
 if($auto_updates == '1') {
     function check_product_updates( )
@@ -376,7 +393,10 @@ if($auto_updates == '1') {
         $updated_productstock = $decode_content->products[0]->quantity;
         $timestamp = current_time( 'timestamp' );
         $existcheck = get_wc_products_where_custom_field_is_set('_codeswholesale_product_id', $updated_productid);
-        error_log("PRODUCT UPDATE: ((" . $existcheck[1] . " ))  ". json_encode($decode_content->products[0]) . "<br>", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+        if( $updated_productname == '') {
+            $updated_productname = get_the_title( $existcheck[1] );
+        }
+        //error_log("PRODUCT UPDATE: ((" . $existcheck[1] . " ))  ". json_encode($decode_content->products[0]) . "<br>", 3, '../wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         if($existcheck[0] >= 1 ) {
             $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
             $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
@@ -407,20 +427,435 @@ if($auto_updates == '1') {
             update_post_meta($existcheck[1], '_price', $setprice);
             update_post_meta($existcheck[1], '_codeswholesale_product_stock_price', $updated_productprice);
             update_post_meta($existcheck[1], '_stock', $updated_productstock);
+            if($updated_productstock == 0) {
+                $out_of_stock_staus = 'outofstock';
+                update_post_meta( $existcheck[1], '_stock_status', wc_clean( $out_of_stock_staus ) );
+                wp_set_post_terms( $existcheck[1], 'outofstock', 'product_visibility', true );
+            }
             //error_log('1 ' . $filecontent . " - updated \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
         } else {
-            $wpdb->insert($wpdb->prefix . 'bojett_import', array(
-                'cws_id' => $updated_productid,
-                'cws_game_title' => $updated_productname,
-                'cws_game_price' => $updated_productprice,
-                'cws_phpworker' => 'postback',
-                'created_at' => $timestamp
-            ));
-            //error_log('1 ' . $filecontent . " - Produkt wurde nicht gefunden, somit wurde kein Update angewendet \n", 3, 'wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+
+            // Initialize bearer token and downloaded json file with all products in it
+            global $wpdb;
+            ini_set('memory_limit', '512M');
+            //$result = file_get_contents(ABSPATH . '/wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt');
+            $table_name = $wpdb->prefix . "bojett_auth_token";
+            $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+            $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+            $db_token = $current_access_bearer_expire;
+            error_log('new trigger ' . current_time( 'timestamp' ) . ' /// ' . time(), 0);
+            // TODO: GG!
+            $get_postback_creator = $wpdb->get_var('SELECT `postback_creator` FROM ' . $wpdb->prefix . 'bojett_credentials');
+            if( $get_postback_creator === NULL || $get_postback_creator == 0) {
+                $get_cred_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+                $wpdb->update(
+                    $wpdb->prefix.'bojett_credentials',
+                    array(
+                        'postback_creator' => 1
+                    ),
+                    array( 'id' => $get_cred_id ),
+                    array(
+                        '%d'
+                    ),
+                    array( '%d' )
+                );
+                wp_schedule_single_event(current_time( 'timestamp' ) - 3570, 'leave_external_server_s', array($decode_content));
+            }
         }
     }
     add_action('admin_post_nopriv_codeswholesale_notifications', 'check_product_updates');
 }
+add_action('leave_external_server_s', 'leave_external_server', 5, 3);
+
+if(! function_exists('checktitle')) {
+    function checktitle($fix_title, $productId, $db_token)
+    {
+        if ($fix_title == '') {
+            $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId, $db_token );
+            $thetitle = json_decode($result, true)['name'];
+            return $thetitle;
+        }
+    }
+}
+if(! function_exists('get_single_product_title')) {
+    function get_single_product_title($productId)
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
+        $db_token = $current_access_bearer_expire;
+        $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId, $db_token );
+        $thetitle = json_decode($result, true)['name'];
+        return $thetitle;
+    }
+}
+
+if(! function_exists('get_single_product_categories')) {
+    function get_single_product_categories($productId)
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
+        $db_token = $current_access_bearer_expire;
+        $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description', $db_token );
+        $payload_array = explode(', ', json_decode($result, true)['category']);
+        return $payload_array;
+    }
+}
+
+if(! function_exists('get_single_product_screenshots')) {
+    function get_single_product_screenshots($productId)
+    {
+        global $wpdb, $import_variable;
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer = $wpdb->get_var("SELECT cws_expires_in FROM $table_name");
+        $current_access_bearer_expire = $wpdb->get_var("SELECT cws_access_token FROM $table_name");
+        $db_token = $current_access_bearer_expire;
+        $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description', $db_token );
+        $payload_array = json_decode($result, true)['photos'];
+        //var_dump($payload_array);
+        $photo_array = array();
+        if (is_array($payload_array)) {
+            foreach ($payload_array as $product_image) {
+                //echo $product_image['url'];
+                $ch5 = curl_init($product_image['url']);
+                curl_setopt($ch5, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch5, CURLOPT_RETURNTRANSFER, true);
+                curl_exec($ch5);
+                $url = curl_getinfo($ch5, CURLINFO_EFFECTIVE_URL);
+                if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                    curl_setopt($ch5, CURLOPT_SSL_VERIFYHOST, 0);
+                    curl_setopt($ch5, CURLOPT_SSL_VERIFYPEER, 0);
+                }
+                array_push($photo_array, array('url' => $url, 'content_type' => curl_getinfo($ch5, CURLINFO_CONTENT_TYPE)));
+                curl_close($ch5); // Close the cURL connection
+            }
+            return $photo_array;
+        } else {
+            return false;
+        }
+    }
+}
+
+if( !function_exists( 'get_single_product_description' ) )
+{
+    function get_single_product_description( $productId )
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . "bojett_auth_token";
+        $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+        $db_token = $current_access_bearer_expire;
+        $result = guzzle_get( 'https://api.codeswholesale.com/v2/products/' . $productId . '/description', $db_token );
+        $payload_array = json_decode($result, true)['factSheets'];
+        $settings_table = $wpdb->prefix . "bojett_credentials";
+        $get_defined_import_language = $wpdb->get_var("SELECT description_language FROM $settings_table");
+        if (is_array($payload_array)) {
+            foreach ($payload_array as $product_description) {
+                if ($product_description['territory'] == $get_defined_import_language && $product_description['description'] != '') {
+                    return $product_description['description'];
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+}
+
+if(! function_exists('attach_product_thumbnail')) {
+    function attach_product_thumbnail($post_id, $url, $flag, $extension)
+    {
+        global $wpdb, $import_variable;
+        $image_url = $url;
+        if (strstr($image_url, 'no-image')) {
+            $image_url = $wpdb->get_var('SELECT placeholder_image FROM '.$wpdb->prefix.'bojett_credentials');
+        }
+        $url_array = explode('/', $url);
+        $image_name = $url_array[count($url_array) - 1];
+        $image_data = file_get_contents($image_url); // Get image data
+        $upload_dir = wp_upload_dir(); // Set upload folder
+        $unique_file_name = wp_unique_filename($upload_dir['path'], $image_name); //    Generate unique name
+        if ($extension != '') {
+            $filename = basename($unique_file_name . $extension); // Create image file name
+        } else {
+            $filename = basename($unique_file_name); // Create image file name
+        }
+        // Check folder permission and define file location
+        if (wp_mkdir_p($upload_dir['path'])) {
+            $file = $upload_dir['path'] . '/' . $filename;
+        } else {
+            $file = $upload_dir['basedir'] . '/' . $filename;
+        }
+        // Create the image file on the server
+        file_put_contents($file, $image_data);
+        // Check image file type
+        $wp_filetype = wp_check_filetype($filename, null);
+        // Set attachment data
+        $attachment = array(
+            'post_mime_type' => $wp_filetype['type'],
+            'post_title' => sanitize_file_name($filename),
+            'post_content' => '',
+            'post_status' => 'inherit'
+        );
+        // Create the attachment
+        $attach_id = wp_insert_attachment($attachment, $file, $post_id);
+        // Include image.php
+        // Define attachment metadata
+        $attach_data = wp_generate_attachment_metadata($attach_id, $file);
+        // Assign metadata to attachment
+        wp_update_attachment_metadata($attach_id, $attach_data);
+        // asign to feature image
+
+        if ($flag == 0) {
+            // And finally assign featured image to post
+            set_post_thumbnail($post_id, $attach_id);
+        }
+        // assign to the product gallery
+        if ($flag == 1) {
+            // Add gallery image to product
+            $attach_id_array = get_post_meta($post_id, '_product_image_gallery', true);
+            $attach_id_array .= ',' . $attach_id;
+            update_post_meta($post_id, '_product_image_gallery', $attach_id_array);
+        }
+    }
+}
+
+function leave_external_server( $value ) {
+    global $wpdb;
+    sleep(30);
+    //error_log('1 ' . date('d.m.Y H:i:s') . " || ". $value . " wird jetzt gesucht. \n", 3, ABSPATH . '/wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+    ini_set('memory_limit', '512M');
+    $result = file_get_contents(ABSPATH . '/wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/current_import.txt');
+    $timestamp = current_time( 'timestamp' );
+    $product_array = json_decode( $result, true )['items'];
+    $count_products = count( json_decode( $result, true )['items'] );
+
+
+
+
+    foreach($product_array as $single_prod) {
+        set_time_limit(120);
+        $searching_pid = $single_prod['productId'];
+        if ($searching_pid != $value) {
+            //error_log('1 ' . date('d.m.Y H:i:s') . " || foreach ". $value . " != " . $searching_pid . " war leider nichts... \n", 3, ABSPATH . '/wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+            continue;
+        } else {
+            //error_log('1 ' . date('d.m.Y H:i:s') . " || NEU ". $value . " wurde gefunden. \n", 3, ABSPATH . '/wp-content/plugins/' . dirname( plugin_basename( __FILE__ ) ) . '/includes/passive_log.txt');
+            $timestamp = time();
+            $product_name = $single_prod['name'];
+            $wpdb->insert($wpdb->prefix . 'bojett_import', array(
+                'cws_id' => $value,
+                'cws_game_title' => $product_name,
+                'cws_game_price' => 'DA',
+                'cws_phpworker' => 'postbackc',
+                'created_at' => $timestamp
+            ));
+
+
+            // Initialize functions for inserting the new product informations from import sheet
+
+            global $wpdb;
+            $table_name = $wpdb->prefix . "bojett_auth_token";
+            $current_access_bearer = $wpdb->get_var( "SELECT cws_expires_in FROM $table_name" );
+            $current_access_bearer_expire = $wpdb->get_var( "SELECT cws_access_token FROM $table_name" );
+            $db_token = $current_access_bearer_expire;
+            //$result = inital_pull($db_token, $result);
+
+            $product_thumbs = $single_prod['images'];
+            foreach ($product_thumbs as $product_thumb) {
+                if ($product_thumb['format'] == 'MEDIUM') {
+                    $productthumb = $product_thumb['image'];
+                    // new curl pull to follow the permalink of the product thumbnail.
+                    $ch4 = curl_init($productthumb);
+                    curl_setopt($ch4, CURLOPT_FOLLOWLOCATION, true);
+                    curl_setopt($ch4, CURLOPT_RETURNTRANSFER, true);
+                    if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') {
+                        curl_setopt($ch4, CURLOPT_SSL_VERIFYHOST, 0);
+                        curl_setopt($ch4, CURLOPT_SSL_VERIFYPEER, 0);
+                    }
+                    curl_exec($ch4);
+                    $thumb = curl_getinfo($ch4, CURLINFO_EFFECTIVE_URL);
+                    curl_close($ch4);
+                }
+            }
+
+
+
+// Get productdata
+            $cws_productid = $single_prod['productId']; // gets cws product id e.g. 04a8137c-0de9-42d4-8959-f15ca2567862
+
+            $productpicture = $thumb; // will return a single string for main productimage e.g. https://api.codeswholesale.com/v1/products/f62cab33-27ec-4c3d-a0ea-b3c7925c7fbf/image?format=MEDIUM
+            $catalognumber = $single_prod['identifier']; // gets cws product SKU as String e.g. "MMCOHEU"
+            $platform = $single_prod['platform'];
+            $regions = $single_prod['regions'];
+
+            if(count($regions) > 1) {
+                $region = implode(", ", $regions);
+            } else  {
+                $region =  $regions[0];
+            }
+
+            $languages = $single_prod['languages'];
+            if(count($languages) > 1) {
+                $language = implode(", ", $languages);
+            }else  {
+                $language =  $languages[0];
+            }
+            $producttitle = $single_prod['name'];
+
+
+            $productdescription = get_single_product_description($cws_productid);
+            $productcategories = get_single_product_categories($cws_productid);
+            $productphotos = get_single_product_screenshots($cws_productid);
+            $cws_productprice = $value->products[0]->prices[0]->price;
+            $cws_quantity = $value->products[0]->quantity;
+            if ($productcategories[0] != "") {
+                $tager = [];
+                foreach ($productcategories as $prod_cat) {
+                    if (!term_exists($prod_cat, 'product_cat')) {
+                        $term = wp_insert_term($prod_cat, 'product_cat');
+                        var_dump($term);
+                        array_push($tager, $term['term_id']);
+                    } else {
+                        $term_s = get_term_by('name', $prod_cat, 'product_cat');
+                        array_push($tager, $term_s->term_id);
+                    }
+                }
+            }
+
+            $user_id = 1; // So, user is selected..
+            if ($producttitle == '') {
+                $producttitle_set = $single_prod['name'];
+            } else {
+                $producttitle_set = $producttitle;
+            }
+            if ($productdescription == '') {
+                $productdescription_set = '';
+            } else {
+                $productdescription_set = $productdescription;
+            }
+            $post_pro = array(
+                'post_author' => $user_id,
+                'post_title' => $producttitle_set,
+                'post_content' => $productdescription_set,
+                'post_status' => 'publish',
+                'post_type' => "product",
+            );
+            $main_currency = $wpdb->get_var('SELECT product_currency FROM ' . $wpdb->prefix . 'bojett_credentials');
+            $get_currency_value = $wpdb->get_var('SELECT `value` FROM ' . $wpdb->prefix . 'bojett_currency_rates WHERE `name` = "' . $main_currency .'"');
+            $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
+            $post_id = wp_insert_post($post_pro);
+            $profit_margin_value = $wpdb->get_var('SELECT profit_margin_value FROM '.$wpdb->prefix.'bojett_credentials');
+            if(substr($profit_margin_value, -1, 1) == 'a') {
+                $profit_margin_value = substr($profit_margin_value, 0, -1);
+                $realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
+            } else {
+                $profit_margin_value = substr($profit_margin_value, 0, -1);
+                $cws_productprice_currency = $cws_productprice * $get_currency_value;
+                $realprice = $cws_productprice_currency * ($profit_margin_value / 100) + $cws_productprice_currency;
+            }
+
+            //$realprice = ($cws_productprice * $get_currency_value) + $profit_margin_value;
+            wp_set_object_terms($post_id, 'simple', 'product_type');
+            update_post_meta($post_id, '_visibility', 'visible');
+            update_post_meta($post_id, '_stock_status', 'instock');
+            update_post_meta($post_id, 'total_sales', '0');
+            update_post_meta($post_id, '_downloadable', 'no');
+            update_post_meta($post_id, '_virtual', 'yes');
+            update_post_meta($post_id, '_regular_price', $realprice);
+            update_post_meta($post_id, '_sale_price', '');
+            update_post_meta($post_id, '_purchase_note', '');
+            update_post_meta($post_id, '_featured', 'no');
+            update_post_meta($post_id, '_codeswholesale_product_id', $cws_productid);
+            update_post_meta($post_id, '_codeswholesale_product_stock_price', $cws_productprice);
+            update_post_meta($post_id, '_sku', $catalognumber);
+
+            $attr = array(
+                array('name' => 'Language', // set attribute name
+                    'value' => $language, // set attribute value
+                    'position' => 1,
+                    'is_visible' => 1,
+                    'is_variation' => 0,
+                    'is_taxonomy' => 0
+                ),
+                array('name' => 'Platform', // set attribute name
+                    'value' => $platform, // set attribute value
+                    'position' => 2,
+                    'is_visible' => 1,
+                    'is_variation' => 0,
+                    'is_taxonomy' => 0
+                ),
+                array('name' => 'Region', // set attribute name
+                    'value' => $region, // set attribute value
+                    'position' => 3,
+                    'is_visible' => 1,
+                    'is_variation' => 0,
+                    'is_taxonomy' => 0
+                ),
+            );
+            update_post_meta($post_id, '_product_attributes', $attr);
+            update_post_meta($post_id, '_sale_price_dates_from', '');
+            update_post_meta($post_id, '_sale_price_dates_to', '');
+            update_post_meta($post_id, '_price', $realprice);
+            update_post_meta($post_id, '_sold_individually', '');
+            update_post_meta($post_id, '_manage_stock', 'yes');
+            update_post_meta($post_id, '_backorders', 'no');
+            wc_update_product_stock($post_id, $cws_quantity, 'set');
+            if($cws_quantity == 0) {
+                $out_of_stock_staus = 'outofstock';
+                update_post_meta( $post_id, '_stock_status', wc_clean( $out_of_stock_staus ) );
+                wp_set_post_terms( $post_id, 'outofstock', 'product_visibility', true );
+            }
+            wp_set_object_terms($post_id, $tager, 'product_cat');
+            set_time_limit(360);
+            /**
+             * Attach images to product (feature/ gallery)
+             */
+
+
+            attach_product_thumbnail($post_id, $productpicture, 0, '');
+            if(is_array($productphotos)) {
+                foreach ($productphotos as $screenshots) {
+                    //set gallery image
+                    $screenshot_url = $screenshots['url'];
+                    $screenshot_mime = $screenshots['content_type'];
+                    if ($screenshot_mime == 'image/jpeg') {
+                        $screenshot_ext = '.jpg';
+                        attach_product_thumbnail($post_id, $screenshot_url, 1, $screenshot_ext);
+                    } else if ($screenshot_mime == 'image/png') {
+                        $screenshot_ext = '.png';
+                        attach_product_thumbnail($post_id, $screenshot_url, 1, $screenshot_ext);
+                    }
+                }
+            }
+            $get_cred_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+            $wpdb->update(
+                $wpdb->prefix.'bojett_credentials',
+                array(
+                    'postback_creator' => 0
+                ),
+                array( 'id' => $get_cred_id ),
+                array(
+                    '%d'
+                ),
+                array( '%d' )
+            );
+            exit();
+        }
+    }
+    $get_cred_id = $wpdb->get_var('SELECT id FROM '.$wpdb->prefix.'bojett_credentials');
+    $wpdb->update(
+        $wpdb->prefix.'bojett_credentials',
+        array(
+            'postback_creator' => 0
+        ),
+        array( 'id' => $get_cred_id ),
+        array(
+            '%d'
+        ),
+        array( '%d' )
+    );
+}
+
 
 function bojett_settings() {
     global $table_prefix, $wpdb;
