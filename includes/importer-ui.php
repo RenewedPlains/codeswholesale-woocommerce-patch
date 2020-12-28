@@ -11,6 +11,9 @@ if($_GET['get_as_json'] == 'true') {
 
     $import_worker = $wpdb->get_results('SELECT * FROM '.$wpdb->prefix.'bojett_import_worker');
     $collector = array();
+    $get_current_count = $wpdb->get_var('SELECT `productarray_id` FROM `' . $wpdb->prefix . 'bojett_credentials`');
+    $importnumber = $wpdb->get_var('SELECT `importnumber` FROM `' . $wpdb->prefix . 'bojett_credentials`');
+    $get_start_time = $wpdb->get_var('SELECT `import_started` FROM `' . $wpdb->prefix . 'bojett_credentials`');
     foreach($import_worker as $single_worker) {
         $this_worker = $wpdb->get_results('SELECT * FROM ' . $wpdb->prefix . 'bojett_import WHERE `cws_phpworker` = "'. $single_worker->name .'" ORDER BY `created_at` DESC LIMIT 0, 1');
         foreach($this_worker as $the_worker) {
@@ -19,9 +22,9 @@ if($_GET['get_as_json'] == 'true') {
             $collector["$single_worker->name"]['cws_message'] = $single_worker->cws_message;
             $collector["$single_worker->name"]['cws_game_title'] = $the_worker->cws_game_title;
             $collector["$single_worker->name"]['cws_game_price'] = $the_worker->cws_game_price;
-            $collector["$single_worker->name"]['last_product'] = $single_worker->last_product;
-            $collector["$single_worker->name"]['from_all'] = $single_worker->from;
-            $collector["$single_worker->name"]['to_all'] = $single_worker->to;
+            $collector["$single_worker->name"]['last_product'] = $get_current_count;
+            $collector["$single_worker->name"]['from_all'] = date('d.m.Y H:i:s', $get_start_time ) . ' -- ' . $importnumber . ' Produkte';
+            $collector["$single_worker->name"]['to_all'] = '';
             $collector["$single_worker->name"]['cws_phpworker'] = $the_worker->cws_phpworker;
             $collector["$single_worker->name"]['cws_last_update'] = convert_to_time_ago($the_worker->created_at);
         }
@@ -63,20 +66,14 @@ if($_GET['get_as_json'] == 'true') {
                 <div class="plugin-card-top">
                     <div class="column-name">
                         <h3>
-                            <?php
-                            if(count($import_worker) != 1 ) {
-                                $worker_number = substr($worker->name, -1, 1);
-                            }  else {
-                                $worker_number = 0;
-                            } ?>
-                            Import Worker #<?php echo $worker_number + 1; ?>
+                            Import Worker
                         </h3>
                     </div>
                     <div class="action-links">
                         <ul class="plugin-action-buttons">
                             <li>
                                 <!--<span class="dashicons dashicons-welcome-write-blog"></span>-->
-                                <span class="big_count" style="font-size: 42px;font-weight: bold;">-</span>
+                                <span class="big_count" style="font-size: 42px;font-weight: bold;color:rgba(0, 0, 0, 0.5);">-</span>
                             </li>
                         </ul>
                     </div>
@@ -92,7 +89,7 @@ if($_GET['get_as_json'] == 'true') {
                         <span class="timeago"><?php echo meks_convert_to_time_ago($worker->last_update); ?></span>
                     </div>
                     <div class="column-updated">
-                        <strong><?php _e('Import Products', 'codeswholesale_patch'); ?></strong> <span class="from_import"><?php echo $from_import_worker; ?></span> - <span class="to_import"><?php echo $to_import_worker; ?></span> von <?php echo $get_import_number; ?>
+                        <strong><?php _e('Started at ', 'codeswholesale_patch'); ?></strong> <span class="from_import"><?php echo $from_import_worker; ?></span>
                     </div>
                 </div>
             </div>
@@ -161,7 +158,7 @@ if($_GET['get_as_json'] == 'true') {
                     <ul class="plugin-action-buttons">
                         <li>
                             <!--<span class="dashicons dashicons-welcome-write-blog"></span>-->
-                            <span class="big_count" style="font-size: 42px;font-weight: bold;">-</span>
+                            <span class="big_count" style="font-size: 42px;font-weight: bold;color:rgba(0, 0, 0, 0.5);">-</span>
                         </li>
                     </ul>
                 </div>
