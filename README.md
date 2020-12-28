@@ -1,5 +1,5 @@
 # CodesWholesale WooCommerce Patch
-Current Version: `0.9.3`-dev
+Current Version: `0.9.5`
 
 This repository requires a Wordpress Woocommerce instance with preconfigured Codeswholesale for WooCommerce plugin. The Codeswholesale patch is installed as an additional plugin, which retrieves the access data from the Codeswholesale for WooCommerce Plugin API and starts a new import process via the V2 API of Codeswholesale.
 
@@ -23,6 +23,16 @@ will be developed further until a version is created which completely replaces t
 Please consider reporting bugs and possible improvements via Issue on GitHub or on the official CodesWholesale support Discord Server.
 
 ### Changelog
+#### Version 0.9.5
+* Rearranged importer, so that the import can no longer get stuck
+* Should the import still get stuck due to performance, the next import worker will be started within 4 minutes until the entire import is finished.
+
+
+#### Version 0.9.4
+* Fixed some stucking errors from the importer
+* Added fully supported productimporter with Postbackurl
+
+
 #### Version 0.9.3
   * Added new HTML GUI for importer
   * Fixed bearer token aborting import process (can't verify the account on CWS)
